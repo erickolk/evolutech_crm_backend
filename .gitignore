@@ -1,0 +1,11 @@
+# Dependências
+node_modules/
+
+# Arquivos de ambiente (segredos)
+.env
+
+# Pasta de build do TypeScript (para o futuro)
+dist/
+
+# Logs
+npm-debug.log*
