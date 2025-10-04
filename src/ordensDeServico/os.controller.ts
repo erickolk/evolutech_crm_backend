@@ -26,4 +26,29 @@ export class OsController {
             res.status(400).json({ message: error.message });
         }
     }
+    async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: 'O ID da OS é obrigatório.' });
+      }
+      const osAtualizada = await this.service.update(id, req.body);
+      res.status(200).json(osAtualizada);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  async softDelete(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ message: 'O ID da OS é obrigatório.' });
+      }
+      await this.service.softDelete(id);
+      res.status(204).send();
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
 }

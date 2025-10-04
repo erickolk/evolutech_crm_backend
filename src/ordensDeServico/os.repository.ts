@@ -35,5 +35,34 @@ export class OsRepository {
     return data;
   }
 
+  async update(id: string, os: Partial<OrdemDeServico>): Promise<OrdemDeServico> {
+    const { data, error } = await supabase
+      .from('OrdensDeServico')
+      .update(os)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar OS:', error);
+      throw new Error('Não foi possível atualizar a Ordem de Serviço.');
+    }
+
+    return data;
+  }
+
+  async softDelete(id: string) {
+    const { error } = await supabase
+      .from('OrdensDeServico')
+      .update({ deleted_at: new Date() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao deletar OS:', error);
+      throw new Error('Não foi possível deletar a Ordem de Serviço.');
+    }
+
+    return { message: 'Ordem de Serviço desativada com sucesso.' };
+  }
   // Futuramente, outros métodos como findById, create, update, softDelete, etc. virão aqui.
 }

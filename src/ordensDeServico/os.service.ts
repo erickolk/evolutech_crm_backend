@@ -36,4 +36,16 @@ export class OsService {
 
         return this.repository.create(osParaCriar);
     }
+    async update(id: string, osData: Partial<OrdemDeServico>) {
+    // REGRA DE NEGÓCIO: Não permitir alterar o cliente ou o dispositivo de uma OS já criada.
+    if (osData.cliente_id || osData.dispositivo_id) {
+      throw new Error('Não é permitido alterar o cliente ou o dispositivo de uma OS.');
+    }
+    return this.repository.update(id, osData);
+  }
+
+  async softDelete(id: string) {
+    // Lógica futura: verificar se a OS já não está finalizada/cancelada antes de deletar.
+    return this.repository.softDelete(id);
+  }
 }
