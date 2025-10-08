@@ -1,4 +1,4 @@
-import { StatusOS } from './os.types';
+import { StatusOS } from './os.types.js';
 
 // Interface principal para o histórico de status
 export interface OSStatusHistorico {

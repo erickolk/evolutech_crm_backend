@@ -4,108 +4,142 @@ import { EstoqueService } from './estoque.service.js';
 export class EstoqueController {
   private service = new EstoqueService();
 
-  // CRUD de movimentações
-  async createMovimentacao(req: Request, res: Response) {
+  // ===== MOVIMENTAÇÕES BÁSICAS =====
+
+  async criarMovimentacao(req: Request, res: Response) {
     try {
-      const novaMovimentacao = await this.service.createMovimentacao(req.body);
-      res.status(201).json(novaMovimentacao);
+      const movimentacao = await this.service.criarMovimentacao(req.body);
+      res.status(201).json(movimentacao);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
 
-  async findAllMovimentacoes(req: Request, res: Response) {
+  async listarMovimentacoes(req: Request, res: Response) {
     try {
-      const movimentacoes = await this.service.findAll();
+      const filtros = req.query;
+      const movimentacoes = await this.service.listarMovimentacoes(filtros);
       res.status(200).json(movimentacoes);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   }
 
-  async findMovimentacaoById(req: Request, res: Response) {
+  async obterMovimentacao(req: Request, res: Response) {
     try {
       const { id } = req.params;
       if (!id) {
         return res.status(400).json({ message: 'O ID da movimentação é obrigatório.' });
       }
-      const movimentacao = await this.service.findById(id);
+      
+      const movimentacao = await this.service.obterMovimentacao(id);
       if (!movimentacao) {
         return res.status(404).json({ message: 'Movimentação não encontrada.' });
       }
+      
       res.status(200).json(movimentacao);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   }
 
-  async findMovimentacoesByProduto(req: Request, res: Response) {
+  async obterMovimentacoesPorProduto(req: Request, res: Response) {
     try {
-      const { produtoId } = req.params;
-      if (!produtoId) {
+      const { produto_id } = req.params;
+      if (!produto_id) {
         return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
       }
-      const movimentacoes = await this.service.findByProdutoId(produtoId);
+      
+      const filtros = req.query;
+      const movimentacoes = await this.service.listarMovimentacoes({ 
+        ...filtros, 
+        produto_id 
+      });
+      
       res.status(200).json(movimentacoes);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   }
 
-  // Ajustes de estoque
   async ajustarEstoque(req: Request, res: Response) {
     try {
-      const ajuste = await this.service.ajustarEstoque(req.body);
-      res.status(201).json(ajuste);
+      const { produto_id, quantidade_nova, motivo, observacoes, usuario_id } = req.body;
+      
+      if (!produto_id) {
+        return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
+      }
+      
+      if (quantidade_nova === undefined || quantidade_nova < 0) {
+        return res.status(400).json({ message: 'Quantidade nova deve ser informada e não pode ser negativa.' });
+      }
+
+      const movimentacao = await this.service.ajustarEstoque(produto_id, quantidade_nova, motivo, observacoes, usuario_id);
+      res.status(201).json(movimentacao);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
+  // ===== HISTÓRICO E RELATÓRIOS =====
 
-  // Transferências
+  async obterHistoricoProduto(req: Request, res: Response) {
+    try {
+      const { produto_id } = req.params;
+      if (!produto_id) {
+        return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
+      }
+      
+      const filtros = req.query;
+      const historico = await this.service.obterHistoricoProduto(produto_id, filtros);
+      res.status(200).json(historico);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  async gerarRelatorioMovimentacoes(req: Request, res: Response) {
+    try {
+      const filtros = req.query;
+      const relatorio = await this.service.gerarRelatorioMovimentacoes(filtros);
+      res.status(200).json(relatorio);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  // ===== OPERAÇÕES AVANÇADAS =====
+
   async transferirEstoque(req: Request, res: Response) {
     try {
-      const { produtoId, quantidade, localizacaoOrigem, localizacaoDestino, usuarioId } = req.body;
+      const { produto_origem_id, produto_destino_id, quantidade, observacoes, usuario_id } = req.body;
       
-      if (!produtoId || !quantidade || !localizacaoOrigem || !localizacaoDestino || !usuarioId) {
-        return res.status(400).json({ 
-          message: 'Produto, quantidade, localização origem, localização destino e usuário são obrigatórios.' 
-        });
+      if (!produto_origem_id || !produto_destino_id) {
+        return res.status(400).json({ message: 'IDs dos produtos de origem e destino são obrigatórios.' });
+      }
+      
+      if (!quantidade || quantidade <= 0) {
+        return res.status(400).json({ message: 'Quantidade deve ser maior que zero.' });
       }
 
-      const transferencia = await this.service.transferirEstoque(
-        produtoId, 
-        quantidade, 
-        localizacaoOrigem, 
-        localizacaoDestino, 
-        usuarioId
-      );
+      const transferencia = await this.service.transferirEstoque({
+        produto_origem_id,
+        produto_destino_id,
+        quantidade,
+        observacoes,
+        usuario_id
+      });
+      
       res.status(201).json(transferencia);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
 
-  // Consultas e verificações
-  async calcularSaldoAtual(req: Request, res: Response) {
+  async reservarEstoque(req: Request, res: Response) {
     try {
-      const { produtoId } = req.params;
-      if (!produtoId) {
-        return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
-      }
-      const saldo = await this.service.calcularSaldoAtual(produtoId);
-      res.status(200).json({ produto_id: produtoId, saldo_atual: saldo });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-
-  async verificarEstoqueDisponivel(req: Request, res: Response) {
-    try {
-      const { produtoId } = req.params;
-      const { quantidade } = req.body;
+      const { produto_id, quantidade, orcamento_id, usuario_id } = req.body;
       
-      if (!produtoId) {
+      if (!produto_id) {
         return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
       }
       
@@ -113,84 +147,102 @@ export class EstoqueController {
         return res.status(400).json({ message: 'Quantidade deve ser maior que zero.' });
       }
 
-      const disponivel = await this.service.verificarEstoqueDisponivel(produtoId, quantidade);
+      const reserva = await this.service.reservarEstoque({
+        produto_id,
+        quantidade,
+        orcamento_id,
+        usuario_id
+      });
+      
+      res.status(200).json(reserva);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  async baixarEstoqueOrcamento(req: Request, res: Response) {
+    try {
+      const { orcamento_id, itens, usuario_id } = req.body;
+      
+      if (!orcamento_id) {
+        return res.status(400).json({ message: 'O ID do orçamento é obrigatório.' });
+      }
+      
+      if (!itens || !Array.isArray(itens) || itens.length === 0) {
+        return res.status(400).json({ message: 'Lista de itens é obrigatória e deve conter pelo menos um item.' });
+      }
+
+      const baixas = await this.service.baixarEstoqueOrcamento({
+        orcamento_id,
+        itens,
+        usuario_id
+      });
+      
+      res.status(201).json(baixas);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+
+  // ===== AUDITORIA E CONTROLE =====
+
+  async auditarEstoque(req: Request, res: Response) {
+    try {
+      const { produto_id } = req.query;
+      const auditoria = await this.service.auditarEstoque(produto_id as string);
+      res.status(200).json(auditoria);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  async limparHistoricoAntigo(req: Request, res: Response) {
+    try {
+      const { dias_para_manter } = req.body;
+      const diasParaManter = dias_para_manter || 365;
+      
+      if (diasParaManter < 30) {
+        return res.status(400).json({ message: 'Deve manter pelo menos 30 dias de histórico.' });
+      }
+
+      const registrosRemovidos = await this.service.limparHistoricoAntigo(diasParaManter);
       res.status(200).json({ 
-        produto_id: produtoId, 
-        quantidade_solicitada: quantidade,
-        disponivel 
+        message: `${registrosRemovidos} registros removidos com sucesso.`,
+        registros_removidos: registrosRemovidos 
       });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
   }
 
-  async getUltimaMovimentacao(req: Request, res: Response) {
-    try {
-      const { produtoId } = req.params;
-      if (!produtoId) {
-        return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
-      }
-      const ultimaMovimentacao = await this.service.getUltimaMovimentacao(produtoId);
-      res.status(200).json(ultimaMovimentacao);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
+  // ===== INTEGRAÇÃO COM ORÇAMENTOS =====
 
-  // Relatórios
-  async gerarRelatorioMovimentacoes(req: Request, res: Response) {
-    try {
-      const filtros = req.query;
-      const relatorio = await this.service.gerarRelatorioMovimentacoes(filtros as any);
-      res.status(200).json(relatorio);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-
-  async gerarRelatorioEstoque(req: Request, res: Response) {
-    try {
-      const relatorio = await this.service.gerarRelatorioEstoque();
-      res.status(200).json(relatorio);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-
-  async getHistoricoProduto(req: Request, res: Response) {
-    try {
-      const { produtoId } = req.params;
-      if (!produtoId) {
-        return res.status(400).json({ message: 'O ID do produto é obrigatório.' });
-      }
-      const historico = await this.service.getHistoricoProduto(produtoId);
-      res.status(200).json(historico);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-
-  async getTotaisPorTipo(req: Request, res: Response) {
-    try {
-      const { produtoId } = req.query;
-      const totais = await this.service.getTotaisPorTipo(produtoId as string);
-      res.status(200).json(totais);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-
-  // Integração com orçamentos
-  async validarEstoqueParaOrcamento(req: Request, res: Response) {
+  async validarDisponibilidadeParaOrcamento(req: Request, res: Response) {
     try {
       const { itens } = req.body;
-      
+
       if (!itens || !Array.isArray(itens)) {
         return res.status(400).json({ message: 'Lista de itens é obrigatória.' });
       }
 
-      const validacao = await this.service.validarDisponibilidadeParaOrcamento(itens);
-      res.status(200).json(validacao);
+      const resultados = [];
+      for (const item of itens) {
+        if (!item.produto_id || !item.quantidade) {
+          return res.status(400).json({ message: 'produto_id e quantidade são obrigatórios para cada item.' });
+        }
+
+        const disponivel = await this.service.verificarEstoqueDisponivel(item.produto_id, item.quantidade);
+        const saldoAtual = await this.service.calcularSaldoAtual(item.produto_id);
+        
+        resultados.push({
+          produto_id: item.produto_id,
+          quantidade_solicitada: item.quantidade,
+          saldo_atual: saldoAtual,
+          disponivel: disponivel
+        });
+      }
+
+      res.status(200).json({ itens: resultados });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
@@ -198,54 +250,54 @@ export class EstoqueController {
 
   async registrarSaidaParaOrcamento(req: Request, res: Response) {
     try {
-      const { produtoId, quantidade, orcamentoId, usuarioId } = req.body;
-      
-      if (!produtoId || !quantidade || !orcamentoId || !usuarioId) {
-        return res.status(400).json({ 
-          message: 'Produto, quantidade, orçamento e usuário são obrigatórios.' 
-        });
+      const { produto_id, quantidade, orcamento_id, usuario_id } = req.body;
+
+      if (!produto_id || !quantidade || !orcamento_id) {
+        return res.status(400).json({ message: 'produto_id, quantidade e orcamento_id são obrigatórios.' });
+      }
+
+      if (quantidade <= 0) {
+        return res.status(400).json({ message: 'Quantidade deve ser maior que zero.' });
       }
 
       const movimentacao = await this.service.registrarSaidaParaOrcamento(
-        produtoId, 
+        produto_id, 
         quantidade, 
-        orcamentoId, 
-        usuarioId
+        orcamento_id, 
+        usuario_id
       );
+
       res.status(201).json(movimentacao);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      if (error.message.includes('não encontrado')) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('insuficiente')) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: error.message });
     }
   }
 
   async estornarSaidaOrcamento(req: Request, res: Response) {
     try {
-      const { orcamentoId, usuarioId } = req.body;
+      const { orcamento_id, usuario_id } = req.body;
+
+      if (!orcamento_id) {
+        return res.status(400).json({ message: 'orcamento_id é obrigatório.' });
+      }
+
+      const estornos = await this.service.estornarSaidaOrcamento(orcamento_id, usuario_id);
       
-      if (!orcamentoId || !usuarioId) {
-        return res.status(400).json({ 
-          message: 'Orçamento e usuário são obrigatórios.' 
-        });
-      }
-
-      const estornos = await this.service.estornarSaidaOrcamento(orcamentoId, usuarioId);
-      res.status(200).json(estornos);
+      res.status(200).json({
+        message: `${estornos.length} movimentações estornadas com sucesso.`,
+        estornos: estornos
+      });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-
-  // Soft delete
-  async softDelete(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({ message: 'O ID da movimentação é obrigatório.' });
+      if (error.message.includes('não encontrado') || error.message.includes('Nenhuma movimentação')) {
+        return res.status(404).json({ message: error.message });
       }
-      await this.service.softDelete(id);
-      res.status(204).send();
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(500).json({ message: error.message });
     }
   }
 }

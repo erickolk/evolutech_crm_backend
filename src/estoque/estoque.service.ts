@@ -1,264 +1,421 @@
-import { EstoqueRepository } from './estoque.repository.js';
-import { ProdutoService } from '../produtos/produto.service.js';
-import { 
-  type EstoqueMovimentacao, 
-  type CreateMovimentacaoRequest, 
-  type AjusteEstoqueRequest,
-  type RelatorioMovimentacoes,
-  type RelatorioEstoque,
-  type HistoricoMovimentacoes,
-  type TipoMovimentacao
+import { EstoqueMovimentacaoRepository } from './estoqueMovimentacao.repository.js';
+import { ProdutoRepository } from '../produtos/produto.repository.js';
+import type { 
+  EstoqueMovimentacao, 
+  CreateMovimentacaoRequest, 
+  AjusteEstoqueRequest,
+  MovimentacaoResponse,
+  TipoMovimentacao,
+  MotivoMovimentacao,
+  FiltroMovimentacao,
+  ListaMovimentacoesResponse,
+  RelatorioMovimentacoes,
+  HistoricoMovimentacoes,
+  TransferenciaEstoque,
+  ReservaEstoque,
+  AuditoriaEstoque,
+  BaixaEstoqueOrcamento,
+  RelatorioEstoque
 } from './estoque.types.js';
+import type { Produto } from '../produtos/produto.types.js';
 
 export class EstoqueService {
-  private repository = new EstoqueRepository();
-  private produtoService = new ProdutoService();
+  private movimentacaoRepository: EstoqueMovimentacaoRepository;
+  private produtoRepository: ProdutoRepository;
 
-  // CRUD básico de movimentações
-  async createMovimentacao(movimentacaoData: CreateMovimentacaoRequest): Promise<EstoqueMovimentacao> {
-    // Validar produto
-    await this.produtoService.validarProdutoParaMovimentacao(movimentacaoData.produto_id);
+  constructor() {
+    this.movimentacaoRepository = new EstoqueMovimentacaoRepository();
+    this.produtoRepository = new ProdutoRepository();
+  }
 
-    // Validações de negócio
-    if (movimentacaoData.quantidade === 0) {
-      throw new Error('Quantidade não pode ser zero.');
+  // ===== OPERAÇÕES BÁSICAS DE MOVIMENTAÇÃO =====
+
+  async criarMovimentacao(movimentacao: CreateMovimentacaoRequest): Promise<MovimentacaoResponse> {
+    // Validações básicas
+    await this.validarMovimentacao(movimentacao);
+
+    // Buscar produto para obter dados atuais
+    const produto = await this.produtoRepository.findById(movimentacao.produto_id);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
     }
 
-    // Para saídas, verificar se há estoque suficiente
-    if (movimentacaoData.quantidade < 0) {
-      const estoqueDisponivel = await this.repository.verificarEstoqueDisponivel(
-        movimentacaoData.produto_id, 
-        Math.abs(movimentacaoData.quantidade)
-      );
+    const quantidadeAnterior = produto.quantidade_atual || 0;
+    
+    // Calcular nova quantidade baseada no tipo de movimentação
+    const quantidadeAtual = this.calcularNovaQuantidade(
+      quantidadeAnterior, 
+      movimentacao.quantidade, 
+      movimentacao.tipo_movimentacao
+    );
 
-      if (!estoqueDisponivel) {
-        throw new Error('Estoque insuficiente para realizar a movimentação.');
-      }
+    // Validar se a operação é possível
+    if (quantidadeAtual < 0) {
+      throw new Error('Operação resultaria em estoque negativo.');
     }
 
-    // Criar movimentação
-    const movimentacao = await this.repository.create({
-      produto_id: movimentacaoData.produto_id,
-      tipo_movimentacao: movimentacaoData.tipo_movimentacao,
-      quantidade: movimentacaoData.quantidade,
-      observacoes: movimentacaoData.observacoes,
-      documento_referencia: movimentacaoData.documento_referencia,
-      usuario_id: movimentacaoData.usuario_id
-    });
+    // Criar movimentação completa
+    const movimentacaoCompleta: EstoqueMovimentacao = {
+      ...movimentacao,
+      quantidade_anterior: quantidadeAnterior,
+      quantidade_atual: quantidadeAtual,
+      valor_total: movimentacao.quantidade * movimentacao.valor_unitario,
+      data_movimentacao: new Date(),
+      created_at: new Date(),
+      updated_at: new Date()
+    };
 
-    // Atualizar quantidade atual do produto
-    await this.atualizarQuantidadeProduto(movimentacaoData.produto_id);
+    // Salvar movimentação
+    const novaMovimentacao = await this.movimentacaoRepository.create(movimentacaoCompleta);
 
-    return movimentacao;
+    // Atualizar quantidade do produto
+    await this.produtoRepository.updateQuantidadeAtual(movimentacao.produto_id, quantidadeAtual);
+
+    return {
+      id: novaMovimentacao.id!,
+      produto_id: novaMovimentacao.produto_id,
+      tipo_movimentacao: novaMovimentacao.tipo_movimentacao,
+      quantidade: novaMovimentacao.quantidade,
+      quantidade_anterior: novaMovimentacao.quantidade_anterior,
+      quantidade_atual: novaMovimentacao.quantidade_atual,
+      valor_unitario: novaMovimentacao.valor_unitario,
+      valor_total: novaMovimentacao.valor_total,
+      motivo: novaMovimentacao.motivo,
+      data_movimentacao: novaMovimentacao.data_movimentacao,
+      usuario_id: novaMovimentacao.usuario_id,
+      observacoes: novaMovimentacao.observacoes
+    };
   }
 
-  async findAll(): Promise<EstoqueMovimentacao[]> {
-    return this.repository.findAll();
-  }
+  async ajustarEstoque(ajuste: AjusteEstoqueRequest): Promise<MovimentacaoResponse> {
+    const produto = await this.produtoRepository.findById(ajuste.produto_id);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
+    }
 
-  async findById(id: string): Promise<EstoqueMovimentacao | null> {
-    return this.repository.findById(id);
-  }
+    if (ajuste.nova_quantidade < 0) {
+      throw new Error('Nova quantidade não pode ser negativa.');
+    }
 
-  async findByProdutoId(produtoId: string): Promise<EstoqueMovimentacao[]> {
-    return this.repository.findByProdutoId(produtoId);
-  }
-
-  // Ajustes de estoque
-  async ajustarEstoque(ajusteData: AjusteEstoqueRequest): Promise<EstoqueMovimentacao> {
-    // Validar produto
-    await this.produtoService.validarProdutoParaMovimentacao(ajusteData.produto_id);
-
-    // Calcular diferença
-    const saldoAtual = await this.repository.calcularSaldoAtual(ajusteData.produto_id);
-    const diferenca = ajusteData.quantidade_nova - saldoAtual;
+    const quantidadeAnterior = produto.quantidade_atual || 0;
+    const diferenca = ajuste.nova_quantidade - quantidadeAnterior;
 
     if (diferenca === 0) {
-      throw new Error('A quantidade nova é igual ao saldo atual. Nenhum ajuste necessário.');
+      throw new Error('Nova quantidade é igual à quantidade atual.');
     }
 
-    // Criar movimentação de ajuste
-    const movimentacao = await this.repository.create({
-      produto_id: ajusteData.produto_id,
-      tipo_movimentacao: 'ajuste',
-      quantidade: diferenca,
-      observacoes: `Ajuste de estoque. Motivo: ${ajusteData.motivo}`,
-      documento_referencia: ajusteData.documento_referencia,
-      usuario_id: ajusteData.usuario_id
-    });
+    const movimentacao: CreateMovimentacaoRequest = {
+      produto_id: ajuste.produto_id,
+      tipo_movimentacao: TipoMovimentacao.AJUSTE,
+      quantidade: ajuste.nova_quantidade,
+      valor_unitario: produto.preco_custo || 0,
+      motivo: diferenca > 0 ? MotivoMovimentacao.AJUSTE_POSITIVO : MotivoMovimentacao.AJUSTE_NEGATIVO,
+      observacoes: ajuste.observacoes || `Ajuste de estoque para ${ajuste.nova_quantidade} unidades`,
+      usuario_id: ajuste.usuario_id
+    };
 
-    // Atualizar quantidade atual do produto
-    await this.atualizarQuantidadeProduto(ajusteData.produto_id);
-
-    return movimentacao;
+    return this.criarMovimentacao(movimentacao);
   }
 
-  // Movimentações específicas para integração com orçamentos
-  async registrarSaidaParaOrcamento(produtoId: string, quantidade: number, orcamentoId: string, usuarioId: string): Promise<EstoqueMovimentacao> {
-    if (quantidade <= 0) {
-      throw new Error('Quantidade deve ser maior que zero.');
+  // ===== CONSULTAS E RELATÓRIOS =====
+
+  async listarMovimentacoes(filtros: FiltroMovimentacao): Promise<ListaMovimentacoesResponse> {
+    return this.movimentacaoRepository.findWithFilters(filtros);
+  }
+
+  async obterMovimentacao(id: string): Promise<EstoqueMovimentacao | null> {
+    return this.movimentacaoRepository.findById(id);
+  }
+
+  async obterHistoricoProduto(produtoId: string): Promise<HistoricoMovimentacoes> {
+    return this.movimentacaoRepository.getHistoricoProduto(produtoId);
+  }
+
+  async gerarRelatorioMovimentacoes(
+    dataInicio: Date, 
+    dataFim: Date, 
+    produtoId?: string
+  ): Promise<RelatorioMovimentacoes> {
+    return this.movimentacaoRepository.getRelatorioMovimentacoes(dataInicio, dataFim, produtoId);
+  }
+
+  // ===== OPERAÇÕES AVANÇADAS =====
+
+  async transferirEstoque(transferencia: TransferenciaEstoque): Promise<MovimentacaoResponse[]> {
+    // Validar produtos
+    const produtoOrigem = await this.produtoRepository.findById(transferencia.produto_origem_id);
+    const produtoDestino = await this.produtoRepository.findById(transferencia.produto_destino_id);
+
+    if (!produtoOrigem || !produtoDestino) {
+      throw new Error('Produto de origem ou destino não encontrado.');
+    }
+
+    if ((produtoOrigem.quantidade_atual || 0) < transferencia.quantidade) {
+      throw new Error('Estoque insuficiente no produto de origem.');
+    }
+
+    // Criar movimentação de saída
+    const movimentacaoSaida: CreateMovimentacaoRequest = {
+      produto_id: transferencia.produto_origem_id,
+      tipo_movimentacao: TipoMovimentacao.SAIDA,
+      quantidade: transferencia.quantidade,
+      valor_unitario: produtoOrigem.preco_custo || 0,
+      motivo: MotivoMovimentacao.TRANSFERENCIA,
+      documento_referencia: transferencia.documento_referencia,
+      observacoes: `Transferência para produto ${produtoDestino.descricao}`,
+      usuario_id: transferencia.usuario_id
+    };
+
+    // Criar movimentação de entrada
+    const movimentacaoEntrada: CreateMovimentacaoRequest = {
+      produto_id: transferencia.produto_destino_id,
+      tipo_movimentacao: TipoMovimentacao.ENTRADA,
+      quantidade: transferencia.quantidade,
+      valor_unitario: produtoDestino.preco_custo || 0,
+      motivo: MotivoMovimentacao.TRANSFERENCIA,
+      documento_referencia: transferencia.documento_referencia,
+      observacoes: `Transferência de produto ${produtoOrigem.descricao}`,
+      usuario_id: transferencia.usuario_id
+    };
+
+    // Executar transferência
+    const saida = await this.criarMovimentacao(movimentacaoSaida);
+    const entrada = await this.criarMovimentacao(movimentacaoEntrada);
+
+    return [saida, entrada];
+  }
+
+  async reservarEstoque(reserva: ReservaEstoque): Promise<boolean> {
+    const produto = await this.produtoRepository.findById(reserva.produto_id);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
+    }
+
+    const estoqueDisponivel = await this.produtoRepository.verificarEstoqueDisponivel(
+      reserva.produto_id, 
+      reserva.quantidade
+    );
+
+    if (!estoqueDisponivel.pode_reservar) {
+      return false;
+    }
+
+    // TODO: Implementar tabela de reservas
+    // Por enquanto, apenas validamos se é possível reservar
+    return true;
+  }
+
+  async baixarEstoqueOrcamento(baixa: BaixaEstoqueOrcamento): Promise<MovimentacaoResponse[]> {
+    const movimentacoes: MovimentacaoResponse[] = [];
+
+    for (const item of baixa.itens) {
+      const produto = await this.produtoRepository.findById(item.produto_id);
+      if (!produto) {
+        throw new Error(`Produto ${item.produto_id} não encontrado.`);
+      }
+
+      if ((produto.quantidade_atual || 0) < item.quantidade) {
+        throw new Error(`Estoque insuficiente para o produto ${produto.descricao}.`);
+      }
+
+      const movimentacao: CreateMovimentacaoRequest = {
+        produto_id: item.produto_id,
+        tipo_movimentacao: TipoMovimentacao.SAIDA,
+        quantidade: item.quantidade,
+        valor_unitario: item.valor_unitario,
+        motivo: MotivoMovimentacao.VENDA_OS,
+        documento_referencia: baixa.orcamento_id,
+        observacoes: `Baixa automática - Orçamento ${baixa.orcamento_id}`,
+        usuario_id: baixa.usuario_id
+      };
+
+      const resultado = await this.criarMovimentacao(movimentacao);
+      movimentacoes.push(resultado);
+    }
+
+    return movimentacoes;
+  }
+
+  // ===== INTEGRAÇÃO COM ORÇAMENTOS =====
+
+  async registrarSaidaParaOrcamento(
+    produtoId: string, 
+    quantidade: number, 
+    orcamentoId: string, 
+    usuarioId?: string
+  ): Promise<MovimentacaoResponse> {
+    // Validar produto
+    const produto = await this.produtoRepository.findById(produtoId);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
     }
 
     // Verificar estoque disponível
-    const estoqueDisponivel = await this.repository.verificarEstoqueDisponivel(produtoId, quantidade);
-    if (!estoqueDisponivel) {
-      throw new Error('Estoque insuficiente para atender o orçamento.');
+    const estoqueAtual = produto.quantidade_atual || 0;
+    if (estoqueAtual < quantidade) {
+      throw new Error(`Estoque insuficiente. Disponível: ${estoqueAtual}, Necessário: ${quantidade}`);
     }
 
-    // Registrar saída
-    return this.createMovimentacao({
+    // Criar movimentação de saída
+    const movimentacao: CreateMovimentacaoRequest = {
       produto_id: produtoId,
-      tipo_movimentacao: 'saida',
-      quantidade: -quantidade, // Negativo para saída
-      observacoes: `Saída para orçamento ${orcamentoId}`,
+      tipo_movimentacao: TipoMovimentacao.SAIDA,
+      quantidade: quantidade,
+      valor_unitario: produto.preco_venda || 0,
+      motivo: MotivoMovimentacao.VENDA_OS,
       documento_referencia: orcamentoId,
+      observacoes: `Saída para orçamento aprovado - ${orcamentoId}`,
       usuario_id: usuarioId
-    });
+    };
+
+    return await this.criarMovimentacao(movimentacao);
   }
 
-  async estornarSaidaOrcamento(orcamentoId: string, usuarioId: string): Promise<EstoqueMovimentacao[]> {
-    // Buscar movimentações do orçamento
-    const movimentacoes = await this.repository.getMovimentacoesPorDocumento(orcamentoId);
-    const estornos: EstoqueMovimentacao[] = [];
+  async estornarSaidaOrcamento(orcamentoId: string, usuarioId?: string): Promise<MovimentacaoResponse[]> {
+    // Buscar todas as movimentações de saída relacionadas ao orçamento
+    const movimentacoesSaida = await this.movimentacaoRepository.getMovimentacoesPorDocumento(orcamentoId);
+    
+    if (!movimentacoesSaida || movimentacoesSaida.length === 0) {
+      throw new Error('Nenhuma movimentação encontrada para este orçamento.');
+    }
 
-    for (const movimentacao of movimentacoes) {
-      if (movimentacao.tipo_movimentacao === 'saida' && movimentacao.quantidade < 0) {
-        // Criar movimentação de estorno (entrada)
-        const estorno = await this.repository.create({
+    const estornos: MovimentacaoResponse[] = [];
+
+    for (const movimentacao of movimentacoesSaida) {
+      // Apenas estornar movimentações de saída que não foram estornadas
+      if (movimentacao.tipo_movimentacao === TipoMovimentacao.SAIDA && !movimentacao.deleted_at) {
+        // Criar movimentação de entrada para estornar
+        const estorno: CreateMovimentacaoRequest = {
           produto_id: movimentacao.produto_id,
-          tipo_movimentacao: 'entrada',
-          quantidade: Math.abs(movimentacao.quantidade),
-          observacoes: `Estorno de saída do orçamento ${orcamentoId}`,
-          documento_referencia: `ESTORNO_${orcamentoId}`,
+          tipo_movimentacao: TipoMovimentacao.ENTRADA,
+          quantidade: movimentacao.quantidade,
+          valor_unitario: movimentacao.valor_unitario,
+          motivo: MotivoMovimentacao.DEVOLUCAO_CLIENTE,
+          documento_referencia: `ESTORNO-${orcamentoId}`,
+          observacoes: `Estorno de saída - Orçamento ${orcamentoId} rejeitado/cancelado`,
           usuario_id: usuarioId
-        });
+        };
 
-        estornos.push(estorno);
+        const resultadoEstorno = await this.criarMovimentacao(estorno);
+        estornos.push(resultadoEstorno);
 
-        // Atualizar quantidade do produto
-        await this.atualizarQuantidadeProduto(movimentacao.produto_id);
+        // Marcar a movimentação original como estornada (soft delete)
+        await this.movimentacaoRepository.softDelete(movimentacao.id!);
       }
     }
 
     return estornos;
   }
 
-  // Relatórios e consultas
-  async gerarRelatorioMovimentacoes(filtros: RelatorioMovimentacoes): Promise<EstoqueMovimentacao[]> {
-    return this.repository.findMovimentacoesPorPeriodo(filtros);
-  }
-
-  async gerarRelatorioEstoque(): Promise<RelatorioEstoque> {
-    const produtosComEstoqueBaixo = await this.produtoService.findProdutosComEstoqueBaixo();
-    const produtosSemEstoque = await this.produtoService.findProdutosSemEstoque();
-    const totalProdutos = (await this.produtoService.findProdutosAtivos()).length;
-
-    return {
-      total_produtos: totalProdutos,
-      produtos_estoque_baixo: produtosComEstoqueBaixo,
-      produtos_sem_estoque: produtosSemEstoque,
-      data_geracao: new Date()
-    };
-  }
-
-  async getHistoricoProduto(produtoId: string): Promise<HistoricoMovimentacoes> {
-    return this.repository.getHistoricoPorProduto(produtoId);
-  }
-
-  async getTotaisPorTipo(produtoId?: string): Promise<Record<TipoMovimentacao, number>> {
-    return this.repository.getTotaisPorTipo(produtoId);
-  }
-
-  // Validações e verificações
   async verificarEstoqueDisponivel(produtoId: string, quantidadeNecessaria: number): Promise<boolean> {
-    return this.repository.verificarEstoqueDisponivel(produtoId, quantidadeNecessaria);
+    const produto = await this.produtoRepository.findById(produtoId);
+    if (!produto) {
+      return false;
+    }
+
+    const estoqueAtual = produto.quantidade_atual || 0;
+    return estoqueAtual >= quantidadeNecessaria;
   }
 
   async calcularSaldoAtual(produtoId: string): Promise<number> {
-    return this.repository.calcularSaldoAtual(produtoId);
+    const produto = await this.produtoRepository.findById(produtoId);
+    return produto?.quantidade_atual || 0;
   }
 
-  async getUltimaMovimentacao(produtoId: string): Promise<EstoqueMovimentacao | null> {
-    return this.repository.getUltimaMovimentacao(produtoId);
-  }
+  // ===== AUDITORIA E CONTROLE =====
 
-  // Métodos auxiliares
-  private async atualizarQuantidadeProduto(produtoId: string): Promise<void> {
-    const saldoAtual = await this.repository.calcularSaldoAtual(produtoId);
-    await this.produtoService.updateQuantidadeAtual(produtoId, saldoAtual);
-  }
+  async auditarEstoque(produtoId?: string): Promise<AuditoriaEstoque[]> {
+    const produtos = produtoId 
+      ? [await this.produtoRepository.findById(produtoId)].filter(Boolean) as Produto[]
+      : await this.produtoRepository.findProdutosAtivos();
 
-  // Validações específicas para orçamentos
-  async validarDisponibilidadeParaOrcamento(itens: Array<{produto_id: string, quantidade: number}>): Promise<{valido: boolean, erros: string[]}> {
-    const erros: string[] = [];
+    const auditorias: AuditoriaEstoque[] = [];
 
-    for (const item of itens) {
-      const disponivel = await this.verificarEstoqueDisponivel(item.produto_id, item.quantidade);
-      
-      if (!disponivel) {
-        const produto = await this.produtoService.findById(item.produto_id);
-        const saldoAtual = await this.calcularSaldoAtual(item.produto_id);
-        
-        erros.push(
-          `Produto "${produto?.descricao || item.produto_id}": ` +
-          `Solicitado ${item.quantidade}, disponível ${saldoAtual}`
-        );
+    for (const produto of produtos) {
+      const ultimaMovimentacao = await this.movimentacaoRepository.getUltimaMovimentacao(produto.id!);
+      const totalMovimentacoes = await this.movimentacaoRepository.contarMovimentacoesPorProduto(produto.id!);
+
+      // Calcular estoque teórico baseado nas movimentações
+      const movimentacoes = await this.movimentacaoRepository.findByProdutoId(produto.id!);
+      let estoqueTeoricoCalculado = 0;
+
+      for (const mov of movimentacoes) {
+        switch (mov.tipo_movimentacao) {
+          case TipoMovimentacao.ENTRADA:
+            estoqueTeoricoCalculado += mov.quantidade;
+            break;
+          case TipoMovimentacao.SAIDA:
+            estoqueTeoricoCalculado -= mov.quantidade;
+            break;
+          case TipoMovimentacao.AJUSTE:
+            estoqueTeoricoCalculado = mov.quantidade_atual;
+            break;
+        }
       }
+
+      const divergencia = (produto.quantidade_atual || 0) - estoqueTeoricoCalculado;
+
+      auditorias.push({
+        produto_id: produto.id!,
+        produto_descricao: produto.descricao,
+        estoque_sistema: produto.quantidade_atual || 0,
+        estoque_teorico: estoqueTeoricoCalculado,
+        divergencia: divergencia,
+        tem_divergencia: Math.abs(divergencia) > 0.01, // Tolerância para arredondamentos
+        ultima_movimentacao: ultimaMovimentacao?.data_movimentacao,
+        total_movimentacoes: totalMovimentacoes,
+        data_auditoria: new Date()
+      });
     }
 
-    return {
-      valido: erros.length === 0,
-      erros
-    };
+    return auditorias;
   }
 
-  // Transferências entre localizações (futuro)
-  async transferirEstoque(produtoId: string, quantidade: number, localizacaoOrigem: string, localizacaoDestino: string, usuarioId: string): Promise<EstoqueMovimentacao[]> {
-    if (quantidade <= 0) {
+  async limparHistoricoAntigo(diasParaManter: number = 365): Promise<number> {
+    return this.movimentacaoRepository.limparMovimentacoesAntigas(diasParaManter);
+  }
+
+  // ===== MÉTODOS AUXILIARES PRIVADOS =====
+
+  private async validarMovimentacao(movimentacao: CreateMovimentacaoRequest): Promise<void> {
+    if (!movimentacao.produto_id) {
+      throw new Error('ID do produto é obrigatório.');
+    }
+
+    if (movimentacao.quantidade <= 0) {
       throw new Error('Quantidade deve ser maior que zero.');
     }
 
-    // Validar produto
-    await this.produtoService.validarProdutoParaMovimentacao(produtoId);
+    if (movimentacao.valor_unitario < 0) {
+      throw new Error('Valor unitário não pode ser negativo.');
+    }
 
-    // Criar saída da localização origem
-    const saida = await this.repository.create({
-      produto_id: produtoId,
-      tipo_movimentacao: 'transferencia',
-      quantidade: -quantidade,
-      observacoes: `Transferência de ${localizacaoOrigem} para ${localizacaoDestino}`,
-      documento_referencia: `TRANSF_${Date.now()}`,
-      usuario_id: usuarioId
-    });
+    const produto = await this.produtoRepository.findById(movimentacao.produto_id);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
+    }
 
-    // Criar entrada na localização destino
-    const entrada = await this.repository.create({
-      produto_id: produtoId,
-      tipo_movimentacao: 'transferencia',
-      quantidade: quantidade,
-      observacoes: `Transferência de ${localizacaoOrigem} para ${localizacaoDestino}`,
-      documento_referencia: saida.documento_referencia,
-      usuario_id: usuarioId
-    });
-
-    return [saida, entrada];
+    if (!produto.ativo) {
+      throw new Error('Não é possível movimentar estoque de produto inativo.');
+    }
   }
 
-  async softDelete(id: string): Promise<void> {
-    const movimentacao = await this.findById(id);
-    
-    if (!movimentacao) {
-      throw new Error('Movimentação não encontrada.');
+  private calcularNovaQuantidade(
+    quantidadeAtual: number, 
+    quantidade: number, 
+    tipo: TipoMovimentacao
+  ): number {
+    switch (tipo) {
+      case TipoMovimentacao.ENTRADA:
+        return quantidadeAtual + quantidade;
+      case TipoMovimentacao.SAIDA:
+        return quantidadeAtual - quantidade;
+      case TipoMovimentacao.AJUSTE:
+        return quantidade; // Para ajuste, a quantidade é o novo valor absoluto
+      case TipoMovimentacao.TRANSFERENCIA:
+        return quantidadeAtual; // Transferência é tratada separadamente
+      default:
+        throw new Error('Tipo de movimentação inválido.');
     }
-
-    // Verificar se pode ser deletada (regras de negócio)
-    if (movimentacao.documento_referencia && movimentacao.documento_referencia.startsWith('ORCAMENTO_')) {
-      throw new Error('Não é possível deletar movimentações vinculadas a orçamentos.');
-    }
-
-    await this.repository.softDelete(id);
-
-    // Recalcular quantidade do produto
-    await this.atualizarQuantidadeProduto(movimentacao.produto_id);
   }
 }

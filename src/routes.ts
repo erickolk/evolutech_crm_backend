@@ -92,30 +92,28 @@ router.get('/orcamentos/:id/calculations', (req, res) => orcamentoItemController
 
 // --- Rotas de Estoque ---
 // Movimentações de estoque
-router.post('/estoque/movimentacao', (req, res) => estoqueController.createMovimentacao(req, res));
-router.get('/estoque/movimentacoes', (req, res) => estoqueController.findAll(req, res));
-router.get('/estoque/movimentacoes/:id', (req, res) => estoqueController.findById(req, res));
-router.get('/estoque/produto/:produtoId', (req, res) => estoqueController.findByProdutoId(req, res));
-router.delete('/estoque/movimentacoes/:id', (req, res) => estoqueController.softDelete(req, res));
+router.post('/estoque/movimentacao', (req, res) => estoqueController.criarMovimentacao(req, res));
+router.get('/estoque/movimentacoes', (req, res) => estoqueController.listarMovimentacoes(req, res));
+router.get('/estoque/movimentacoes/:id', (req, res) => estoqueController.obterMovimentacao(req, res));
+router.get('/estoque/produto/:produtoId', (req, res) => estoqueController.obterMovimentacoesPorProduto(req, res));
+router.delete('/estoque/movimentacoes/:id', (req, res) => estoqueController.excluirMovimentacao(req, res));
 
 // Controle de estoque
 router.post('/estoque/ajuste', (req, res) => estoqueController.ajustarEstoque(req, res));
 router.post('/estoque/transferencia', (req, res) => estoqueController.transferirEstoque(req, res));
 
 // Consultas de estoque
-router.get('/estoque/produto/:produtoId/saldo', (req, res) => estoqueController.calcularSaldoAtual(req, res));
-router.post('/estoque/verificar-disponibilidade', (req, res) => estoqueController.verificarEstoqueDisponivel(req, res));
-router.get('/estoque/produto/:produtoId/ultima-movimentacao', (req, res) => estoqueController.getUltimaMovimentacao(req, res));
+router.get('/estoque/historico/:produtoId', (req, res) => estoqueController.obterHistoricoProduto(req, res));
+router.get('/estoque/relatorio', (req, res) => estoqueController.gerarRelatorioMovimentacoes(req, res));
 
-// Relatórios
-router.get('/estoque/relatorio/movimentacoes', (req, res) => estoqueController.gerarRelatorioMovimentacoes(req, res));
-router.get('/estoque/relatorio/estoque', (req, res) => estoqueController.gerarRelatorioEstoque(req, res));
-router.get('/estoque/produto/:produtoId/historico', (req, res) => estoqueController.getHistoricoProduto(req, res));
-router.get('/estoque/totais-por-tipo', (req, res) => estoqueController.getTotaisPorTipo(req, res));
+// Operações avançadas
+router.post('/estoque/reserva', (req, res) => estoqueController.reservarEstoque(req, res));
+router.post('/estoque/baixa-orcamento', (req, res) => estoqueController.baixarEstoqueOrcamento(req, res));
+router.post('/estoque/auditoria', (req, res) => estoqueController.auditarEstoque(req, res));
 
 // Integração com orçamentos
-router.post('/estoque/orcamento/validar', (req, res) => estoqueController.validarDisponibilidadeParaOrcamento(req, res));
-router.post('/estoque/orcamento/registrar-saida', (req, res) => estoqueController.registrarSaidaParaOrcamento(req, res));
-router.post('/estoque/orcamento/estornar', (req, res) => estoqueController.estornarSaidaOrcamento(req, res));
+router.post('/estoque/validar-disponibilidade', (req, res) => estoqueController.validarDisponibilidadeParaOrcamento(req, res));
+router.post('/estoque/registrar-saida-orcamento', (req, res) => estoqueController.registrarSaidaParaOrcamento(req, res));
+router.post('/estoque/estornar-saida-orcamento', (req, res) => estoqueController.estornarSaidaOrcamento(req, res));
 
 export default router;

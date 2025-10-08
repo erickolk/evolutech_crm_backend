@@ -1,12 +1,12 @@
 import { supabase } from '../lib/supabaseClient.js';
+import { StatusOS } from './os.types.js';
 import { 
   type OSStatusHistorico,
   type CreateOSStatusHistoricoRequest,
   type OSStatusHistoricoResponse,
   type OSStatusHistoricoFilters,
   type StatusChangeStats,
-  type OSTimeline,
-  StatusOS
+  type OSTimeline
 } from './osStatusHistorico.types.js';
 
 export class OSStatusHistoricoRepository {

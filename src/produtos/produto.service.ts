@@ -1,8 +1,21 @@
 import { ProdutoRepository } from './produto.repository.js';
+import { EstoqueMovimentacaoRepository } from '../estoque/estoqueMovimentacao.repository.js';
 import { type Produto, type UpdateEstoqueConfigRequest, type EstoqueAtual, type ProdutoEstoqueBaixo, type ProdutoSemEstoque } from './produto.types.js';
+import { 
+  type SaldoAtual,
+  type FiltroProdutos,
+  type ListaProdutosResponse,
+  type ConfiguracaoEstoque,
+  type EstoqueDisponivel,
+  type RelatorioEstoque,
+  type CreateMovimentacaoRequest,
+  TipoMovimentacao,
+  MotivoMovimentacao
+} from '../estoque/estoque.types.js';
 
 export class ProdutoService {
   private repository = new ProdutoRepository();
+  private movimentacaoRepository = new EstoqueMovimentacaoRepository();
 
   async create(produtoData: Omit<Produto, 'id' | 'created_at' | 'deleted_at'>) {
     if (!produtoData.descricao || produtoData.preco_venda === undefined) {
@@ -98,8 +111,8 @@ export class ProdutoService {
     return this.repository.findProdutosSemEstoque();
   }
 
-  async getEstoqueAtual(id: string): Promise<EstoqueAtual | null> {
-    return this.repository.getEstoqueAtual(id);
+  async getEstoqueAtual(): Promise<SaldoAtual[]> {
+    return this.repository.getEstoqueAtual();
   }
 
   async updateQuantidadeAtual(id: string, novaQuantidade: number) {
@@ -118,17 +131,12 @@ export class ProdutoService {
     return this.repository.findByCodigoBarras(codigoBarras);
   }
 
-  async verificarEstoqueDisponivel(id: string, quantidadeNecessaria: number): Promise<boolean> {
+  async verificarEstoqueDisponivel(id: string, quantidadeNecessaria: number): Promise<EstoqueDisponivel> {
     if (quantidadeNecessaria <= 0) {
       throw new Error('Quantidade necessária deve ser maior que zero.');
     }
 
-    const estoqueAtual = await this.getEstoqueAtual(id);
-    if (!estoqueAtual) {
-      return false;
-    }
-
-    return estoqueAtual.quantidade_atual >= quantidadeNecessaria;
+    return this.repository.verificarEstoqueDisponivel(id, quantidadeNecessaria);
   }
 
   async validarProdutoParaMovimentacao(id: string): Promise<void> {
@@ -141,5 +149,185 @@ export class ProdutoService {
     if (!produto.ativo) {
       throw new Error('Não é possível movimentar estoque de produto inativo.');
     }
+  }
+
+  // ===== MÉTODOS ESTENDIDOS PARA CONTROLE DE ESTOQUE =====
+
+  async findWithFilters(filtros: FiltroProdutos): Promise<ListaProdutosResponse> {
+    return this.repository.findWithFilters(filtros);
+  }
+
+  async updateConfiguracaoEstoque(produtoId: string, config: ConfiguracaoEstoque): Promise<void> {
+    // Validações
+    if (config.quantidade_minima < 0) {
+      throw new Error('Quantidade mínima não pode ser negativa.');
+    }
+    if (config.quantidade_maxima < 0) {
+      throw new Error('Quantidade máxima não pode ser negativa.');
+    }
+    if (config.quantidade_minima > config.quantidade_maxima) {
+      throw new Error('Quantidade mínima não pode ser maior que a quantidade máxima.');
+    }
+    if (config.ponto_reposicao < 0) {
+      throw new Error('Ponto de reposição não pode ser negativo.');
+    }
+
+    await this.validarProdutoParaMovimentacao(produtoId);
+    return this.repository.updateConfiguracaoEstoque(produtoId, config);
+  }
+
+  async findProdutosParaReposicao(): Promise<ProdutoEstoqueBaixo[]> {
+    return this.repository.findProdutosParaReposicao();
+  }
+
+  async getValorTotalEstoque(): Promise<number> {
+    return this.repository.getValorTotalEstoque();
+  }
+
+  async findByCodigoInterno(codigoInterno: string): Promise<Produto | null> {
+    if (!codigoInterno || codigoInterno.trim() === '') {
+      throw new Error('Código interno é obrigatório.');
+    }
+    return this.repository.findByCodigoInterno(codigoInterno);
+  }
+
+  async getRelatorioEstoque(): Promise<RelatorioEstoque> {
+    const produtos = await this.getEstoqueAtual();
+    const produtosComEstoque = produtos.filter(p => p.quantidade_atual > 0);
+    const produtosSemEstoque = produtos.filter(p => p.quantidade_atual === 0);
+    
+    // Buscar produtos com estoque baixo
+    const produtosEstoqueBaixo = await this.findProdutosComEstoqueBaixo();
+    
+    const valorTotalEstoque = produtos.reduce((total, produto) => {
+      return total + produto.valor_total;
+    }, 0);
+
+    return {
+      total_produtos: produtos.length,
+      produtos_com_estoque: produtosComEstoque.length,
+      produtos_sem_estoque: produtosSemEstoque.length,
+      produtos_estoque_baixo: produtosEstoqueBaixo.length,
+      valor_total_estoque: valorTotalEstoque,
+      produtos
+    };
+  }
+
+  async validarMovimentacaoEstoque(produtoId: string, quantidade: number, tipo: TipoMovimentacao): Promise<void> {
+    await this.validarProdutoParaMovimentacao(produtoId);
+
+    if (quantidade <= 0) {
+      throw new Error('Quantidade deve ser maior que zero.');
+    }
+
+    // Para saídas, verificar se há estoque suficiente
+    if (tipo === TipoMovimentacao.SAIDA) {
+      const estoqueDisponivel = await this.verificarEstoqueDisponivel(produtoId, quantidade);
+      if (!estoqueDisponivel.pode_reservar) {
+        throw new Error(estoqueDisponivel.motivo_bloqueio || 'Estoque insuficiente.');
+      }
+    }
+  }
+
+  async calcularNovoEstoque(produtoId: string, quantidade: number, tipo: TipoMovimentacao): Promise<number> {
+    const produto = await this.findById(produtoId);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
+    }
+
+    const estoqueAtual = produto.quantidade_atual || 0;
+    
+    switch (tipo) {
+      case TipoMovimentacao.ENTRADA:
+        return estoqueAtual + quantidade;
+      case TipoMovimentacao.SAIDA:
+        return estoqueAtual - quantidade;
+      case TipoMovimentacao.AJUSTE:
+        return quantidade; // Para ajuste, a quantidade é o novo valor
+      case TipoMovimentacao.TRANSFERENCIA:
+        return estoqueAtual; // Transferência não altera o estoque total
+      default:
+        throw new Error('Tipo de movimentação inválido.');
+    }
+  }
+
+  async processarMovimentacaoEstoque(movimentacao: CreateMovimentacaoRequest): Promise<void> {
+    // Validar movimentação
+    await this.validarMovimentacaoEstoque(
+      movimentacao.produto_id, 
+      movimentacao.quantidade, 
+      movimentacao.tipo_movimentacao
+    );
+
+    // Calcular novo estoque
+    const novoEstoque = await this.calcularNovoEstoque(
+      movimentacao.produto_id,
+      movimentacao.quantidade,
+      movimentacao.tipo_movimentacao
+    );
+
+    // Atualizar estoque do produto
+    await this.updateQuantidadeAtual(movimentacao.produto_id, novoEstoque);
+
+    // Registrar movimentação
+    const movimentacaoCompleta = {
+      ...movimentacao,
+      quantidade_anterior: (await this.findById(movimentacao.produto_id))?.quantidade_atual || 0,
+      quantidade_atual: novoEstoque,
+      valor_total: movimentacao.quantidade * movimentacao.valor_unitario
+    };
+
+    await this.movimentacaoRepository.create(movimentacaoCompleta);
+  }
+
+  async ajustarEstoque(produtoId: string, novaQuantidade: number, motivo: string, observacoes?: string, usuarioId?: string): Promise<void> {
+    const produto = await this.findById(produtoId);
+    if (!produto) {
+      throw new Error('Produto não encontrado.');
+    }
+
+    if (novaQuantidade < 0) {
+      throw new Error('Nova quantidade não pode ser negativa.');
+    }
+
+    const quantidadeAnterior = produto.quantidade_atual || 0;
+    const diferenca = novaQuantidade - quantidadeAnterior;
+
+    if (diferenca === 0) {
+      throw new Error('Nova quantidade é igual à quantidade atual.');
+    }
+
+    const movimentacao: CreateMovimentacaoRequest = {
+      produto_id: produtoId,
+      tipo_movimentacao: TipoMovimentacao.AJUSTE,
+      quantidade: Math.abs(diferenca),
+      valor_unitario: produto.preco_custo || 0,
+      motivo: diferenca > 0 ? MotivoMovimentacao.AJUSTE_POSITIVO : MotivoMovimentacao.AJUSTE_NEGATIVO,
+      observacoes: observacoes || `Ajuste de estoque: ${motivo}`,
+      usuario_id: usuarioId
+    };
+
+    await this.processarMovimentacaoEstoque(movimentacao);
+  }
+
+  async reservarEstoque(produtoId: string, quantidade: number, documentoReferencia: string, usuarioId?: string): Promise<boolean> {
+    const estoqueDisponivel = await this.verificarEstoqueDisponivel(produtoId, quantidade);
+    
+    if (!estoqueDisponivel.pode_reservar) {
+      return false;
+    }
+
+    // TODO: Implementar sistema de reservas na tabela específica
+    // Por enquanto, apenas validamos se é possível reservar
+    return true;
+  }
+
+  async liberarReserva(produtoId: string, quantidade: number, documentoReferencia: string): Promise<void> {
+    // TODO: Implementar liberação de reserva
+    // Por enquanto, método placeholder
+  }
+
+  async getHistoricoMovimentacoes(produtoId: string): Promise<any> {
+    return this.movimentacaoRepository.getHistoricoProduto(produtoId);
   }
 }
