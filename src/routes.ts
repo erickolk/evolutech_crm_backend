@@ -4,6 +4,8 @@ import { DispositivoController } from './dispositivos/dispositivo.controller.js'
 import { OsController } from './ordensDeServico/os.controller.js'; 
 import { FornecedorController } from './fornecedores/fornecedor.controller.js';
 import { ProdutoController } from './produtos/produto.controller.js';
+import { OrcamentoController } from './orcamentos/orcamento.controller.js';
+import { OrcamentoItemController } from './orcamentos/orcamentoItem.controller.js';
 
 const router = Router();
 
@@ -13,6 +15,8 @@ const dispositivoController = new DispositivoController();
 const osController = new OsController();
 const fornecedorController = new FornecedorController();
 const produtoController = new ProdutoController();
+const orcamentoController = new OrcamentoController();
+const orcamentoItemController = new OrcamentoItemController();
 
 // --- Rotas de Clientes ---
 router.get('/clientes', (req, res) => clienteController.findAll(req, res));
@@ -34,6 +38,8 @@ router.get('/ordensDeServico', (req, res) => osController.findAll(req, res));
 router.post('/ordensDeServico', (req, res) => osController.create(req, res));
 router.patch('/ordensDeServico/:id', (req, res) => osController.update(req, res));
 router.delete('/ordensDeServico/:id', (req, res) => osController.softDelete(req, res));
+// Dentro da seção "Rotas de Ordens de Serviço"
+router.get('/ordensDeServico/:id', (req, res) => osController.findById(req, res));
 
 // --- Rotas de Fornecedores ---
 router.get('/fornecedores', (req, res) => fornecedorController.findAll(req, res));
@@ -48,5 +54,30 @@ router.post('/produtos', (req, res) => produtoController.create(req, res));
 router.get('/produtos/:id', (req, res) => produtoController.findById(req, res));
 router.patch('/produtos/:id', (req, res) => produtoController.update(req, res));
 router.delete('/produtos/:id', (req, res) => produtoController.softDelete(req, res));
+
+// --- Rotas de Orçamentos ---
+router.get('/orcamentos', (req, res) => orcamentoController.findAll(req, res));
+router.post('/orcamentos', (req, res) => orcamentoController.create(req, res));
+router.get('/orcamentos/:id', (req, res) => orcamentoController.findById(req, res));
+router.patch('/orcamentos/:id', (req, res) => orcamentoController.update(req, res));
+router.delete('/orcamentos/:id', (req, res) => orcamentoController.delete(req, res));
+router.get('/orcamentos/os/:osId', (req, res) => orcamentoController.findByOrdemServicoId(req, res));
+router.get('/orcamentos/os/:osId/latest', (req, res) => orcamentoController.getLatestVersionByOrdemServicoId(req, res));
+router.post('/orcamentos/:id/nova-versao', (req, res) => orcamentoController.createNewVersion(req, res));
+router.post('/orcamentos/:id/recalcular', (req, res) => orcamentoController.recalculate(req, res));
+router.get('/orcamentos/:id/can-edit', (req, res) => orcamentoController.canEdit(req, res));
+
+// --- Rotas de Itens de Orçamento ---
+router.get('/orcamentos/:id/itens', (req, res) => orcamentoItemController.findByOrcamentoId(req, res));
+router.post('/orcamentos/:id/itens', (req, res) => orcamentoItemController.create(req, res));
+router.get('/orcamentos/:id/itens/:itemId', (req, res) => orcamentoItemController.findById(req, res));
+router.patch('/orcamentos/:id/itens/:itemId', (req, res) => orcamentoItemController.update(req, res));
+router.delete('/orcamentos/:id/itens/:itemId', (req, res) => orcamentoItemController.delete(req, res));
+router.patch('/orcamentos/:id/itens/:itemId/aprovar', (req, res) => orcamentoItemController.approve(req, res));
+router.patch('/orcamentos/:id/itens/:itemId/rejeitar', (req, res) => orcamentoItemController.reject(req, res));
+router.patch('/orcamentos/:id/itens/:itemId/cliente-traz-peca', (req, res) => orcamentoItemController.setClienteBringsPart(req, res));
+router.patch('/orcamentos/:id/itens/:itemId/status', (req, res) => orcamentoItemController.updateApprovalStatus(req, res));
+router.get('/orcamentos/:id/itens/:itemId/can-edit', (req, res) => orcamentoItemController.canEdit(req, res));
+router.get('/orcamentos/:id/calculations', (req, res) => orcamentoItemController.getOrcamentoCalculations(req, res));
 
 export default router;

@@ -19,6 +19,21 @@ export class OsRepository {
 
     return data;
   }
+  async findById(id: string): Promise<OrdemDeServico | null> {
+    const { data, error } = await supabase
+      .from('OrdensDeServico')
+      .select('*')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar OS por ID:', error);
+      throw new Error('Não foi possível buscar a Ordem de Serviço.');
+    }
+
+    return data;
+  }
 
   async create(os: Omit<OrdemDeServico, 'id' | 'created_at'>): Promise<OrdemDeServico> {
     const { data, error } = await supabase
