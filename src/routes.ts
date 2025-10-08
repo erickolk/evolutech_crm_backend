@@ -6,6 +6,7 @@ import { FornecedorController } from './fornecedores/fornecedor.controller.js';
 import { ProdutoController } from './produtos/produto.controller.js';
 import { OrcamentoController } from './orcamentos/orcamento.controller.js';
 import { OrcamentoItemController } from './orcamentos/orcamentoItem.controller.js';
+import { EstoqueController } from './estoque/estoque.controller.js';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const fornecedorController = new FornecedorController();
 const produtoController = new ProdutoController();
 const orcamentoController = new OrcamentoController();
 const orcamentoItemController = new OrcamentoItemController();
+const estoqueController = new EstoqueController();
 
 // --- Rotas de Clientes ---
 router.get('/clientes', (req, res) => clienteController.findAll(req, res));
@@ -54,6 +56,14 @@ router.post('/produtos', (req, res) => produtoController.create(req, res));
 router.get('/produtos/:id', (req, res) => produtoController.findById(req, res));
 router.patch('/produtos/:id', (req, res) => produtoController.update(req, res));
 router.delete('/produtos/:id', (req, res) => produtoController.softDelete(req, res));
+// Rotas de estoque para produtos
+router.patch('/produtos/:id/estoque', (req, res) => produtoController.updateEstoqueConfig(req, res));
+router.get('/produtos/ativos', (req, res) => produtoController.findProdutosAtivos(req, res));
+router.get('/produtos/estoque-baixo', (req, res) => produtoController.findProdutosComEstoqueBaixo(req, res));
+router.get('/produtos/sem-estoque', (req, res) => produtoController.findProdutosSemEstoque(req, res));
+router.get('/produtos/:id/estoque-atual', (req, res) => produtoController.getEstoqueAtual(req, res));
+router.get('/produtos/codigo-barras/:codigoBarras', (req, res) => produtoController.findByCodigoBarras(req, res));
+router.post('/produtos/:id/verificar-estoque', (req, res) => produtoController.verificarEstoqueDisponivel(req, res));
 
 // --- Rotas de Orçamentos ---
 router.get('/orcamentos', (req, res) => orcamentoController.findAll(req, res));
@@ -79,5 +89,33 @@ router.patch('/orcamentos/:id/itens/:itemId/cliente-traz-peca', (req, res) => or
 router.patch('/orcamentos/:id/itens/:itemId/status', (req, res) => orcamentoItemController.updateApprovalStatus(req, res));
 router.get('/orcamentos/:id/itens/:itemId/can-edit', (req, res) => orcamentoItemController.canEdit(req, res));
 router.get('/orcamentos/:id/calculations', (req, res) => orcamentoItemController.getOrcamentoCalculations(req, res));
+
+// --- Rotas de Estoque ---
+// Movimentações de estoque
+router.post('/estoque/movimentacao', (req, res) => estoqueController.createMovimentacao(req, res));
+router.get('/estoque/movimentacoes', (req, res) => estoqueController.findAll(req, res));
+router.get('/estoque/movimentacoes/:id', (req, res) => estoqueController.findById(req, res));
+router.get('/estoque/produto/:produtoId', (req, res) => estoqueController.findByProdutoId(req, res));
+router.delete('/estoque/movimentacoes/:id', (req, res) => estoqueController.softDelete(req, res));
+
+// Controle de estoque
+router.post('/estoque/ajuste', (req, res) => estoqueController.ajustarEstoque(req, res));
+router.post('/estoque/transferencia', (req, res) => estoqueController.transferirEstoque(req, res));
+
+// Consultas de estoque
+router.get('/estoque/produto/:produtoId/saldo', (req, res) => estoqueController.calcularSaldoAtual(req, res));
+router.post('/estoque/verificar-disponibilidade', (req, res) => estoqueController.verificarEstoqueDisponivel(req, res));
+router.get('/estoque/produto/:produtoId/ultima-movimentacao', (req, res) => estoqueController.getUltimaMovimentacao(req, res));
+
+// Relatórios
+router.get('/estoque/relatorio/movimentacoes', (req, res) => estoqueController.gerarRelatorioMovimentacoes(req, res));
+router.get('/estoque/relatorio/estoque', (req, res) => estoqueController.gerarRelatorioEstoque(req, res));
+router.get('/estoque/produto/:produtoId/historico', (req, res) => estoqueController.getHistoricoProduto(req, res));
+router.get('/estoque/totais-por-tipo', (req, res) => estoqueController.getTotaisPorTipo(req, res));
+
+// Integração com orçamentos
+router.post('/estoque/orcamento/validar', (req, res) => estoqueController.validarDisponibilidadeParaOrcamento(req, res));
+router.post('/estoque/orcamento/registrar-saida', (req, res) => estoqueController.registrarSaidaParaOrcamento(req, res));
+router.post('/estoque/orcamento/estornar', (req, res) => estoqueController.estornarSaidaOrcamento(req, res));
 
 export default router;

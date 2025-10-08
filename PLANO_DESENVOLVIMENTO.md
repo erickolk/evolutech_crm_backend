@@ -72,19 +72,46 @@ Este documento apresenta o plano de desenvolvimento completo para o Evolutech CR
 - ✅ POST/GET/PATCH/DELETE `/api/orcamentos/:id/itens`
 - ✅ PATCH `/api/orcamentos/:id/itens/:itemId/aprovar|rejeitar`
 
-#### 1.2 Módulo de Estoque e Movimentações (Prioridade: ALTA)
-**Complexidade:** Alta | **Tempo estimado:** 2 semanas
+#### ✅ 1.2 Módulo de Estoque e Movimentações (Prioridade: ALTA) - **CONCLUÍDO**
+**Complexidade:** Alta | **Tempo estimado:** 2 semanas | **Status:** ✅ IMPLEMENTADO
 
-**Entidades necessárias:**
-- `EstoqueMovimentacoes` - Histórico de entradas/saídas
-- Extensão da entidade `Produtos` com controle de estoque
+**Entidades implementadas:**
+- ✅ `EstoqueMovimentacoes` - Histórico de entradas/saídas com auditoria completa
+- ✅ Extensão da entidade `Produtos` com controle de estoque
 
-**Funcionalidades:**
-- Controle de quantidade atual por produto
-- Registro de movimentações (entrada, saída, ajuste)
-- Histórico completo para auditoria
-- Alertas de estoque baixo
-- Integração com orçamentos aprovados
+**Funcionalidades implementadas:**
+- ✅ Controle de quantidade atual por produto
+- ✅ Registro de movimentações (entrada, saída, ajuste, transferência)
+- ✅ Histórico completo para auditoria
+- ✅ Alertas de estoque baixo e produtos sem estoque
+- ✅ Integração com orçamentos aprovados
+- ✅ Cálculo automático de saldo atual
+- ✅ Relatórios de movimentações e estoque
+- ✅ Validações de estoque disponível
+- ✅ Controle de estoque mínimo e máximo
+
+**Regras de negócio implementadas:**
+- ✅ Toda movimentação registrada com quantidade anterior e atual
+- ✅ Validação de estoque disponível antes de aprovação de orçamentos
+- ✅ Estorno automático ao rejeitar itens aprovados
+- ✅ Controle de produtos ativos/inativos
+- ✅ Localização de estoque e código de barras
+
+**Arquivos criados:**
+- ✅ `src/estoque/estoque.types.ts`
+- ✅ `src/estoque/estoque.repository.ts`
+- ✅ `src/estoque/estoque.service.ts`
+- ✅ `src/estoque/estoque.controller.ts`
+- ✅ Extensões em `src/produtos/` (types, repository, service, controller)
+- ✅ Rotas adicionadas em `src/routes.ts`
+
+**Endpoints implementados:**
+- ✅ POST/GET/DELETE `/api/estoque/movimentacao`
+- ✅ POST `/api/estoque/ajuste` - Ajustes de inventário
+- ✅ GET `/api/estoque/relatorio/movimentacoes` - Relatórios
+- ✅ GET `/api/produtos/estoque-baixo` - Alertas de estoque
+- ✅ PATCH `/api/produtos/:id/estoque` - Configurações de estoque
+- ✅ Integração com orçamentos para controle automático
 
 #### 1.3 Sistema de Autenticação e Usuários (Prioridade: ALTA)
 **Complexidade:** Média | **Tempo estimado:** 1-2 semanas

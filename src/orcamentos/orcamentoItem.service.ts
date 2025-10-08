@@ -1,12 +1,14 @@
 import { OrcamentoItemRepository } from './orcamentoItem.repository.js';
 import { OrcamentoRepository } from './orcamento.repository.js';
 import { ProdutoRepository } from '../produtos/produto.repository.js';
+import { EstoqueService } from '../estoque/estoque.service.js';
 import { type OrcamentoItem, type CreateOrcamentoItemRequest, type UpdateOrcamentoItemRequest, type ApprovalRequest } from './orcamento.types.js';
 
 export class OrcamentoItemService {
   private itemRepository = new OrcamentoItemRepository();
   private orcamentoRepository = new OrcamentoRepository();
   private produtoRepository = new ProdutoRepository();
+  private estoqueService = new EstoqueService();
 
   async findAll(): Promise<OrcamentoItem[]> {
     return this.itemRepository.findAll();
@@ -79,6 +81,44 @@ export class OrcamentoItemService {
     // Verificar se o item pode ter status alterado (deve estar pendente)
     if (item.status_aprovacao !== 'pendente') {
       throw new Error('Apenas itens com status "pendente" podem ter o status de aprovação alterado.');
+    }
+
+    // Se aprovando um item com produto, verificar e movimentar estoque
+    if (approvalData.status_aprovacao === 'aprovado' && item.produto_id && !item.cliente_traz_peca) {
+      // Verificar se há estoque suficiente
+      const estoqueDisponivel = await this.estoqueService.verificarEstoqueDisponivel(
+        item.produto_id, 
+        item.quantidade
+      );
+
+      if (!estoqueDisponivel) {
+        const saldoAtual = await this.estoqueService.calcularSaldoAtual(item.produto_id);
+        throw new Error(
+          `Estoque insuficiente para aprovar o item. ` +
+          `Necessário: ${item.quantidade}, Disponível: ${saldoAtual}`
+        );
+      }
+
+      // Registrar saída do estoque
+      await this.estoqueService.registrarSaidaParaOrcamento(
+        item.produto_id,
+        item.quantidade,
+        item.orcamento_id,
+        'SISTEMA' // TODO: Pegar usuário do contexto
+      );
+    }
+
+    // Se rejeitando um item que estava aprovado, estornar estoque
+    if (approvalData.status_aprovacao === 'rejeitado' && 
+        item.status_aprovacao === 'aprovado' && 
+        item.produto_id && 
+        !item.cliente_traz_peca) {
+      
+      // Estornar movimentação de estoque
+      await this.estoqueService.estornarSaidaOrcamento(
+        item.orcamento_id,
+        'SISTEMA' // TODO: Pegar usuário do contexto
+      );
     }
 
     // Atualizar status
@@ -207,7 +247,57 @@ export class OrcamentoItemService {
   }
 
   async getOrcamentoCalculations(orcamentoId: string) {
-    await this.validateOrcamentoExists(orcamentoId);
     return this.itemRepository.getOrcamentoCalculations(orcamentoId);
+  }
+
+  // Métodos específicos para integração com estoque
+  async validarEstoqueParaOrcamento(orcamentoId: string): Promise<{valido: boolean, erros: string[]}> {
+    const itens = await this.findByOrcamentoId(orcamentoId);
+    
+    // Filtrar apenas itens que precisam de estoque (com produto e cliente não traz peça)
+    const itensComEstoque = itens.filter(item => 
+      item.produto_id && 
+      !item.cliente_traz_peca &&
+      item.status_aprovacao === 'aprovado'
+    );
+
+    if (itensComEstoque.length === 0) {
+      return { valido: true, erros: [] };
+    }
+
+    // Preparar dados para validação
+    const itensParaValidacao = itensComEstoque.map(item => ({
+      produto_id: item.produto_id!,
+      quantidade: item.quantidade
+    }));
+
+    return this.estoqueService.validarDisponibilidadeParaOrcamento(itensParaValidacao);
+  }
+
+  async processarEstoqueOrcamento(orcamentoId: string, acao: 'reservar' | 'estornar'): Promise<void> {
+    const itens = await this.findByOrcamentoId(orcamentoId);
+    
+    // Filtrar apenas itens aprovados que precisam de estoque
+    const itensComEstoque = itens.filter(item => 
+      item.produto_id && 
+      !item.cliente_traz_peca &&
+      item.status_aprovacao === 'aprovado'
+    );
+
+    for (const item of itensComEstoque) {
+      if (acao === 'reservar') {
+        await this.estoqueService.registrarSaidaParaOrcamento(
+          item.produto_id!,
+          item.quantidade,
+          orcamentoId,
+          'SISTEMA' // TODO: Pegar usuário do contexto
+        );
+      } else if (acao === 'estornar') {
+        await this.estoqueService.estornarSaidaOrcamento(
+          orcamentoId,
+          'SISTEMA' // TODO: Pegar usuário do contexto
+        );
+      }
+    }
   }
 }
