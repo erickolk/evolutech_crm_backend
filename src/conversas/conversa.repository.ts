@@ -18,8 +18,7 @@ export class ConversaRepository {
         cliente:Clientes!cliente_id (
           id,
           nome,
-          whatsapp_id,
-          email
+          whatsapp_id
         ),
         agente:agentes!agente_id (
           id,
@@ -92,8 +91,7 @@ export class ConversaRepository {
         cliente:Clientes!cliente_id (
           id,
           nome,
-          whatsapp_id,
-          email
+          whatsapp_id
         ),
         agente:agentes!agente_id (
           id,
@@ -122,10 +120,9 @@ export class ConversaRepository {
         cliente:Clientes!cliente_id (
           id,
           nome,
-          whatsapp_id,
-          email
+          whatsapp_id
         ),
-        agente:Usuarios!agente_id (
+        agente:agentes!agente_id (
           id,
           nome,
           email
@@ -149,10 +146,9 @@ export class ConversaRepository {
         cliente:Clientes!cliente_id (
           id,
           nome,
-          whatsapp_id,
-          email
+          whatsapp_id
         ),
-        agente:Usuarios!agente_id (
+        agente:agentes!agente_id (
           id,
           nome,
           email

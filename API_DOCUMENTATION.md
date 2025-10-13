@@ -7,6 +7,10 @@
 **Formato de Dados:** JSON  
 **Encoding:** UTF-8  
 
+⚠️ **IMPORTANTE:** Todos os endpoints da API requerem o prefixo `/api`. Por exemplo:
+- ✅ Correto: `GET http://localhost:3008/api/conversas`
+- ❌ Incorreto: `GET http://localhost:3008/conversas`  
+
 ## 🔐 Autenticação
 
 ### Sistema de Autenticação JWT
