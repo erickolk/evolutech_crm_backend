@@ -4,9 +4,8 @@ import { type Orcamento, type CreateOrcamentoRequest, type UpdateOrcamentoReques
 export class OrcamentoRepository {
   async findAll(): Promise<Orcamento[]> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .select('*')
-      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -19,10 +18,9 @@ export class OrcamentoRepository {
 
   async findById(id: string): Promise<Orcamento | null> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .select('*')
       .eq('id', id)
-      .is('deleted_at', null)
       .single();
 
     if (error) {
@@ -38,10 +36,9 @@ export class OrcamentoRepository {
 
   async findByOrdemServicoId(ordemServicoId: string): Promise<Orcamento[]> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .select('*')
-      .eq('ordem_servico_id', ordemServicoId)
-      .is('deleted_at', null)
+      .eq('os_id', ordemServicoId)
       .order('versao', { ascending: false });
 
     if (error) {
@@ -54,10 +51,9 @@ export class OrcamentoRepository {
 
   async findLatestVersionByOrdemServicoId(ordemServicoId: string): Promise<Orcamento | null> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .select('*')
-      .eq('ordem_servico_id', ordemServicoId)
-      .is('deleted_at', null)
+      .eq('os_id', ordemServicoId)
       .order('versao', { ascending: false })
       .limit(1)
       .single();
@@ -75,10 +71,9 @@ export class OrcamentoRepository {
 
   async getNextVersion(ordemServicoId: string): Promise<number> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .select('versao')
-      .eq('ordem_servico_id', ordemServicoId)
-      .is('deleted_at', null)
+      .eq('os_id', ordemServicoId)
       .order('versao', { ascending: false })
       .limit(1);
 
@@ -92,19 +87,16 @@ export class OrcamentoRepository {
 
   async create(orcamentoData: CreateOrcamentoRequest): Promise<Orcamento> {
     // Buscar próxima versão
-    const nextVersion = await this.getNextVersion(orcamentoData.ordem_servico_id);
+    const nextVersion = await this.getNextVersion(orcamentoData.os_id);
 
     const orcamento = {
-      ...orcamentoData,
+      os_id: orcamentoData.os_id,
       versao: nextVersion,
       status: 'pendente' as const,
-      valor_total_pecas: 0,
-      valor_total_servicos: 0,
-      valor_total_geral: 0,
     };
 
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .insert(orcamento)
       .select()
       .single();
@@ -119,13 +111,12 @@ export class OrcamentoRepository {
 
   async update(id: string, orcamentoData: UpdateOrcamentoRequest): Promise<Orcamento> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .update({
         ...orcamentoData,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .is('deleted_at', null)
       .select()
       .single();
 
@@ -144,13 +135,12 @@ export class OrcamentoRepository {
     status?: string;
   }): Promise<Orcamento> {
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .update({
         ...calculations,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .is('deleted_at', null)
       .select()
       .single();
 
@@ -170,11 +160,11 @@ export class OrcamentoRepository {
     }
 
     // Buscar próxima versão
-    const nextVersion = await this.getNextVersion(original.ordem_servico_id);
+    const nextVersion = await this.getNextVersion(original.os_id);
 
     // Criar nova versão
     const newVersion = {
-      ordem_servico_id: original.ordem_servico_id,
+      os_id: original.os_id,
       versao: nextVersion,
       status: 'pendente' as const,
       desconto_percentual: original.desconto_percentual,
@@ -186,7 +176,7 @@ export class OrcamentoRepository {
     };
 
     const { data, error } = await supabase
-      .from('orcamentos')
+      .from('Orcamentos')
       .insert(newVersion)
       .select()
       .single();
@@ -199,18 +189,16 @@ export class OrcamentoRepository {
     return data;
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string): Promise<void> {
     const { error } = await supabase
-      .from('orcamentos')
-      .update({ deleted_at: new Date().toISOString() })
+      .from('Orcamentos')
+      .delete()
       .eq('id', id);
 
     if (error) {
       console.error('Erro ao deletar orçamento:', error);
       throw new Error('Não foi possível deletar o orçamento.');
     }
-
-    return { message: 'Orçamento desativado com sucesso.' };
   }
 
   async canEdit(id: string): Promise<boolean> {
@@ -220,7 +208,22 @@ export class OrcamentoRepository {
     }
 
     // Verificar se é a versão mais recente
-    const latestVersion = await this.findLatestVersionByOrdemServicoId(orcamento.ordem_servico_id);
+    const latestVersion = await this.findLatestVersionByOrdemServicoId(orcamento.os_id);
     return latestVersion?.id === id;
+  }
+
+  async updateStatus(id: string, status: string): Promise<void> {
+    const { error } = await supabase
+      .from('Orcamentos')
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao atualizar status:', error);
+      throw new Error('Não foi possível atualizar o status.');
+    }
   }
 }

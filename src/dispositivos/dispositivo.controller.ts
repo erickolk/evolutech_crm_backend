@@ -14,6 +14,15 @@ export class DispositivoController { // <-- A linha mais importante!
     }
   }
 
+  async findAll(req: Request, res: Response) {
+    try {
+      const dispositivos = await this.service.findAll();
+      res.status(200).json(dispositivos);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
   async findAllByCliente(req: Request, res: Response) {
     try {
       const { clienteId } = req.params;

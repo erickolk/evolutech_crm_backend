@@ -27,6 +27,13 @@ export class PagamentoService {
   private osRepository = new OsRepository();
 
   /**
+   * Lista todos os pagamentos
+   */
+  async findAll(): Promise<Pagamento[]> {
+    return await this.repository.findAll();
+  }
+
+  /**
    * Cria um novo pagamento
    */
   async create(pagamento: CreatePagamentoRequest, usuario_id: string): Promise<Pagamento> {

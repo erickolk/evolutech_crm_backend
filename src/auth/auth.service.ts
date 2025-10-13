@@ -452,4 +452,36 @@ export class AuthService {
   async getAuthStats(days: number = 30) {
     return this.authRepository.getAuthStats(days);
   }
+
+  /**
+   * Verifica se um token JWT é válido
+   */
+  async verifyToken(token: string): Promise<boolean> {
+    try {
+      const decoded = this.verifyAccessToken(token);
+      
+      // Check if session is still active
+      const session = await this.authRepository.getSessionByToken(token);
+      if (!session || session.revogado) {
+        return false;
+      }
+
+      // Check if user is still active
+      const usuario = await this.usuarioRepository.findById(decoded.usuario_id);
+      if (!usuario || !usuario.ativo) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Obtém uma sessão ativa pelo ID
+   */
+  async getActiveSession(sessionId: string): Promise<any> {
+    return this.authRepository.getActiveSession(sessionId);
+  }
 }

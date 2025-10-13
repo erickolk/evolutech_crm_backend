@@ -6,6 +6,18 @@ export class PagamentoController {
   private service = new PagamentoService();
 
   /**
+   * Lista todos os pagamentos
+   */
+  async findAll(req: Request, res: Response) {
+    try {
+      const pagamentos = await this.service.findAll();
+      res.status(200).json(pagamentos);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  /**
    * Cria um novo pagamento
    */
   async create(req: Request, res: Response) {

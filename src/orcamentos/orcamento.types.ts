@@ -5,7 +5,7 @@ export interface Orcamento {
   deleted_at?: string | null; // Soft delete
 
   // Relacionamentos
-  ordem_servico_id: string;
+  os_id: string;
 
   // Dados do Orçamento
   versao: number;
@@ -25,7 +25,7 @@ export interface Orcamento {
 }
 
 export interface CreateOrcamentoRequest {
-  ordem_servico_id: string;
+  os_id: string;
   desconto_percentual?: number;
   desconto_justificativa?: string;
   observacoes?: string;

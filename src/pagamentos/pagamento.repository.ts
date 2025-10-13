@@ -20,6 +20,23 @@ import {
 
 export class PagamentoRepository {
   /**
+   * Lista todos os pagamentos
+   */
+  async findAll(): Promise<Pagamento[]> {
+    const { data, error } = await supabase
+      .from('Pagamentos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar pagamentos:', error);
+      throw new Error('Não foi possível buscar os pagamentos.');
+    }
+
+    return data || [];
+  }
+
+  /**
    * Cria um novo pagamento
    */
   async create(pagamento: CreatePagamentoRequest): Promise<Pagamento> {

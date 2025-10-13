@@ -18,6 +18,20 @@ export class DispositivoRepository {
     return data;
   }
 
+  async findAll(): Promise<Dispositivo[]> {
+    const { data, error } = await supabase
+      .from('Dispositivos')
+      .select('*')
+      .is('deleted_at', null);
+
+    if (error) {
+      console.error('Erro ao buscar todos os Dispositivos:', error);
+      throw new Error('Não foi possível buscar os dispositivos.');
+    }
+
+    return data;
+  }
+
   // Decisão de Arquitetura: Geralmente, buscamos os dispositivos de um cliente específico.
   async findAllByCliente(clienteId: string): Promise<Dispositivo[]> {
     const { data, error } = await supabase

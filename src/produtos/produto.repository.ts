@@ -57,6 +57,7 @@ export class ProdutoRepository {
   }
 
   async update(id: string, produto: Partial<Produto>): Promise<Produto> {
+    console.log(`Attempting to update product with id: ${id}`, produto);
     const { data, error } = await supabase
       .from('Produtos')
       .update(produto)
@@ -65,8 +66,8 @@ export class ProdutoRepository {
       .single();
 
     if (error) {
-      console.error('Erro ao atualizar Produto:', error);
-      throw new Error('Não foi possível atualizar o produto.');
+      console.error('Detailed error updating product:', error);
+      throw new Error(`Erro do Supabase: ${JSON.stringify(error)}`);
     }
 
     return data as Produto;

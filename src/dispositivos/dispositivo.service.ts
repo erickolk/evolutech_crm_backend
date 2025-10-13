@@ -12,6 +12,10 @@ export class DispositivoService {
     return this.repository.create(dispositivoData);
   }
 
+  async findAll() {
+    return this.repository.findAll();
+  }
+
   async findAllByCliente(clienteId: string) {
     // Lógica futura: poderíamos verificar se o cliente existe antes de buscar.
     return this.repository.findAllByCliente(clienteId);

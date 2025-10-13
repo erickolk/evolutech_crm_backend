@@ -31,7 +31,7 @@ export class OrcamentoService {
 
   async create(orcamentoData: CreateOrcamentoRequest): Promise<Orcamento> {
     // Validar se a OS existe e está ativa
-    const os = await this.osRepository.findById(orcamentoData.ordem_servico_id);
+    const os = await this.osRepository.findById(orcamentoData.os_id);
     if (!os) {
       throw new Error('Ordem de Serviço não encontrada.');
     }

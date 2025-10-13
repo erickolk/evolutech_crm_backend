@@ -15,9 +15,17 @@ export class EstoqueMovimentacaoRepository {
   // ===== CRUD BÁSICO =====
   
   async create(movimentacao: CreateMovimentacaoRequest): Promise<EstoqueMovimentacao> {
+    // Usar apenas os campos que existem na tabela EstoqueMovimentacoes
+    const movimentacaoFinal = {
+      produto_id: movimentacao.produto_id,
+      quantidade: movimentacao.quantidade
+    };
+    
+    console.log('Tentando inserir movimentação final:', movimentacaoFinal);
+    
     const { data, error } = await supabase
       .from('EstoqueMovimentacoes')
-      .insert(movimentacao)
+      .insert(movimentacaoFinal)
       .select()
       .single();
 
@@ -26,6 +34,7 @@ export class EstoqueMovimentacaoRepository {
       throw new Error('Não foi possível criar a movimentação de estoque.');
     }
 
+    console.log('Movimentação criada com sucesso:', data);
     return data as EstoqueMovimentacao;
   }
 

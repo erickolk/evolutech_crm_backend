@@ -72,7 +72,12 @@ export class ProdutoService {
       throw new Error('Quantidade mínima não pode ser maior que a quantidade máxima.');
     }
 
-    return this.repository.update(id, produtoData);
+    try {
+      return await this.repository.update(id, produtoData);
+    } catch (e: any) {
+      // Propagate the detailed error message, as per the instruction.
+      throw new Error(e.message || 'Não foi possível atualizar o produto.');
+    }
   }
 
   async softDelete(id: string) {
