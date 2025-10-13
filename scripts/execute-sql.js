@@ -1,6 +1,10 @@
-const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
-const path = require('path');
+import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuração do Supabase
 const supabaseUrl = 'https://dceaogrgifgvhzvpbznp.supabase.co';
@@ -35,19 +39,26 @@ async function executeSqlFile(filePath) {
   }
 }
 
-// Executar o script SQL
-const sqlFilePath = path.join(__dirname, '..', 'sql', 'add_missing_columns.sql');
+// Obter o caminho do arquivo SQL dos argumentos da linha de comando
+const sqlFileName = process.argv[2];
+if (!sqlFileName) {
+  console.error('Por favor, forneça o nome do arquivo SQL como argumento.');
+  console.error('Uso: node execute-sql.js <caminho_do_arquivo.sql>');
+  process.exit(1);
+}
+
+const sqlFilePath = path.join(__dirname, '..', sqlFileName);
 executeSqlFile(sqlFilePath)
   .then(success => {
     if (success) {
       console.log('✅ Script SQL executado com sucesso!');
       process.exit(0);
     } else {
-      console.log('❌ Falha ao executar script SQL');
+      console.log('❌ Falha na execução do script SQL.');
       process.exit(1);
     }
   })
   .catch(err => {
-    console.error('❌ Erro fatal:', err);
+    console.error('❌ Erro inesperado:', err);
     process.exit(1);
   });
