@@ -254,7 +254,7 @@ export class OsRepository {
     const { data, error } = await supabase
       .from('OrdensDeServico')
       .select('*')
-      .lt('data_prevista_entrega', hoje)
+      .lt('prazo_entrega', hoje)
       .not('status', 'in', '(ENTREGUE,CANCELADO)')
       .is('deleted_at', null);
 
@@ -275,7 +275,7 @@ export class OsRepository {
     const { data, error } = await supabase
       .from('OrdensDeServico')
       .select('*')
-      .eq('data_prevista_entrega', hoje)
+      .eq('prazo_entrega', hoje)
       .not('status', 'in', '(ENTREGUE,CANCELADO)')
       .is('deleted_at', null);
 

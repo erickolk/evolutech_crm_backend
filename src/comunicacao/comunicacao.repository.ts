@@ -346,9 +346,9 @@ export class ComunicacaoRepository {
         .select(`
           id,
           numero,
-          status,
-          data_prevista,
-          observacoes_cliente,
+          status_fluxo,
+          prazo_entrega,
+          relato_cliente,
           valor_orcamento,
           clientes!inner(nome),
           dispositivos!inner(tipo, marca),
@@ -370,10 +370,10 @@ export class ComunicacaoRepository {
         cliente_nome: data.clientes.nome,
         dispositivo_tipo: data.dispositivos.tipo,
         dispositivo_marca: data.dispositivos.marca,
-        status_atual: data.status,
+        status_atual: data.status_fluxo,
         tecnico_nome: data.usuarios?.nome,
-        data_prevista: data.data_prevista,
-        observacoes_cliente: data.observacoes_cliente,
+        data_prevista: data.prazo_entrega,
+        observacoes_cliente: data.relato_cliente,
         valor_orcamento: data.valor_orcamento
       };
     } catch (error) {
@@ -389,9 +389,9 @@ export class ComunicacaoRepository {
         .select(`
           id,
           numero,
-          status,
-          data_prevista,
-          observacoes_cliente,
+          status_fluxo,
+          prazo_entrega,
+          relato_cliente,
           valor_orcamento,
           clientes!inner(nome),
           dispositivos!inner(tipo, marca),
@@ -411,10 +411,10 @@ export class ComunicacaoRepository {
         cliente_nome: os.clientes.nome,
         dispositivo_tipo: os.dispositivos.tipo,
         dispositivo_marca: os.dispositivos.marca,
-        status_atual: os.status,
+        status_atual: os.status_fluxo,
         tecnico_nome: os.usuarios?.nome,
-        data_prevista: os.data_prevista,
-        observacoes_cliente: os.observacoes_cliente,
+        data_prevista: os.prazo_entrega,
+        observacoes_cliente: os.relato_cliente,
         valor_orcamento: os.valor_orcamento
       }));
     } catch (error) {

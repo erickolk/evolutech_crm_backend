@@ -25,7 +25,8 @@ CREATE TYPE forma_pagamento AS ENUM (
 CREATE TYPE tipo_pagamento AS ENUM (
   'ENTRADA',
   'PARCELA',
-  'PAGAMENTO_UNICO'
+  'PAGAMENTO_UNICO',
+  'SERVICO'
 );
 
 -- Criar ENUM para Ações do Histórico

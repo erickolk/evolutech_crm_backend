@@ -2,6 +2,7 @@
 export enum StatusPagamento {
   PENDENTE = 'PENDENTE',
   PAGO = 'PAGO',
+  PARCIAL = 'PARCIAL',
   VENCIDO = 'VENCIDO',
   CANCELADO = 'CANCELADO',
   ESTORNADO = 'ESTORNADO'
@@ -20,7 +21,8 @@ export enum FormaPagamento {
 export enum TipoPagamento {
   ENTRADA = 'ENTRADA',
   PARCELA = 'PARCELA',
-  PAGAMENTO_UNICO = 'PAGAMENTO_UNICO'
+  PAGAMENTO_UNICO = 'PAGAMENTO_UNICO',
+  SERVICO = 'SERVICO'
 }
 
 // Interface principal para pagamentos
@@ -31,6 +33,7 @@ export interface Pagamento {
   valor_pago: number;
   valor_pendente: number;
   forma_pagamento: FormaPagamento;
+  tipo_pagamento: TipoPagamento;
   numero_parcelas: number;
   status: StatusPagamento;
   data_vencimento?: string | null;
@@ -61,8 +64,9 @@ export interface CreatePagamentoRequest {
   os_id: string;
   valor_total: number;
   forma_pagamento: FormaPagamento;
+  tipo_pagamento: TipoPagamento;
   numero_parcelas?: number;
-  data_primeiro_vencimento?: string;
+  data_vencimento?: string;
   observacoes?: string;
 }
 

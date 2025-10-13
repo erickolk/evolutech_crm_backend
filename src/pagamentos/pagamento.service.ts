@@ -87,7 +87,7 @@ export class PagamentoService {
   ): Omit<PagamentoParcela, 'id' | 'pagamento_id' | 'created_at' | 'updated_at'>[] {
     const parcelas: Omit<PagamentoParcela, 'id' | 'pagamento_id' | 'created_at' | 'updated_at'>[] = [];
     const valorParcela = pagamento.valor_total / pagamento.numero_parcelas;
-    const dataVencimento = new Date(request.data_vencimento);
+    const dataVencimento = new Date(request.data_vencimento || new Date().toISOString().split('T')[0]);
 
     for (let i = 0; i < pagamento.numero_parcelas; i++) {
       const dataVencimentoParcela = new Date(dataVencimento);

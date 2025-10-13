@@ -22,10 +22,14 @@ export class PagamentoController {
    */
   async create(req: Request, res: Response) {
     try {
-      const novoPagamento = await this.service.create(req.body);
+      // Por enquanto, usando um usuario_id padrão para teste
+      // TODO: Implementar autenticação e obter usuario_id do token
+      const usuario_id = 'sistema';
+      const novoPagamento = await this.service.create(req.body, usuario_id);
       res.status(201).json(novoPagamento);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      console.error('Erro detalhado ao criar pagamento:', error);
+      res.status(400).json({ message: error.message, details: error });
     }
   }
 
