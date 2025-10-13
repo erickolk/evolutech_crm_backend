@@ -8,7 +8,7 @@ import type {
 } from './conversa.types.js';
 
 export class ConversaRepository {
-  private readonly tableName = 'Conversas';
+  private readonly tableName = 'conversas';
 
   async findAll(filters: ConversaFilters = {}): Promise<{ data: ConversaResponse[]; total: number }> {
     let query = supabase
@@ -21,7 +21,7 @@ export class ConversaRepository {
           whatsapp_id,
           email
         ),
-        agente:Usuarios!agente_id (
+        agente:agentes!agente_id (
           id,
           nome,
           email
@@ -95,7 +95,7 @@ export class ConversaRepository {
           whatsapp_id,
           email
         ),
-        agente:Usuarios!agente_id (
+        agente:agentes!agente_id (
           id,
           nome,
           email
