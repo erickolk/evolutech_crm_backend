@@ -1,21 +1,20 @@
 import express from 'express';
 import cors from 'cors';
-import router from './routes.js'; // <-- 1. IMPORTAR O ROTEADOR
+import 'dotenv/config';
+import router from './routes.js';
 
 const app = express();
-const PORT = 3008;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-// Usando o roteador com um prefixo opcional para a API
-app.use('/api', router); // <-- 2. USAR O ROTEADOR
+app.use('/api', router);
 
-// Rota raiz para teste
 app.get('/', (req, res) => {
   res.send('API do CRM está no ar!');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, 'localhost', () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
