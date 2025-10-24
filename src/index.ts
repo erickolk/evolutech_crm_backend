@@ -15,6 +15,6 @@ app.get('/', (req, res) => {
   res.send('API do CRM está no ar!');
 });
 
-app.listen(PORT, 'localhost', () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
 });
