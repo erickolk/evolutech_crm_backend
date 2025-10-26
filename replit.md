@@ -6,6 +6,12 @@ This is a comprehensive CRM (Customer Relationship Management) backend API built
 **Current State**: Fully functional backend API running on port 5000
 
 ## Recent Changes
+- **2024-10-26**: Swagger API Documentation
+  - Installed and configured Swagger UI (swagger-ui-express, swagger-jsdoc)
+  - Created comprehensive documentation for 150+ endpoints across 17 modules
+  - Swagger UI available at `/api-docs` with interactive testing capabilities
+  - Created user guides: DOCUMENTACAO_SWAGGER.md and STATUS_SWAGGER.md
+  - Added schemas for all main entities in swagger.config.ts
 - **2024-10-24**: Initial Replit environment setup
   - Configured environment variables (SUPABASE_URL, SUPABASE_ANON_KEY, JWT_SECRET)
   - Updated server to bind to 0.0.0.0:5000 for Replit environment
@@ -28,6 +34,7 @@ src/
 ├── auth/             # Authentication and authorization
 ├── clientes/         # Customer management
 ├── comunicacao/      # Communication system
+├── config/           # Application configuration (Swagger, etc.)
 ├── conversas/        # Conversations/chat management
 ├── dispositivos/     # Device management
 ├── estoque/          # Inventory/stock management
@@ -41,11 +48,19 @@ src/
 ├── pagamentos/       # Payments management
 ├── produtos/         # Products management
 ├── roles/            # User roles and permissions
+├── swagger/          # Swagger/OpenAPI documentation files
 ├── templates/        # Message templates
 ├── usuarios/         # Users management
 ├── whatsapp/         # WhatsApp Business API integration
 ├── index.ts          # Application entry point
 └── routes.ts         # API routes definition
+
+docs/
+├── DOCUMENTACAO_SWAGGER.md           # Complete Swagger usage guide
+├── STATUS_SWAGGER.md                 # Swagger implementation status
+├── GUIA_RAPIDO_INTEGRACAO.md        # Quick integration guide
+├── INTEGRACAO_FRONTEND_BACKEND_ATUALIZADO.md
+└── EXEMPLOS_REQUISICOES_RESPOSTAS_ATUALIZADO.md
 ```
 
 ### Key Features
@@ -81,7 +96,16 @@ Main route groups:
 - `/templates/*` - Message templates
 - `/comunicacao/*` - Communication system with AI integration
 
-See `API_DOCUMENTATION.md` for detailed endpoint documentation.
+### API Documentation
+- **Swagger UI**: Interactive API documentation at `/api-docs`
+  - Test endpoints directly in the browser
+  - View request/response schemas
+  - JWT authentication support
+  - Export OpenAPI specification
+- **Documentation Files**:
+  - `docs/DOCUMENTACAO_SWAGGER.md` - Complete usage guide
+  - `docs/STATUS_SWAGGER.md` - Implementation status and coverage
+  - `docs/GUIA_RAPIDO_INTEGRACAO.md` - Quick integration guide
 
 ## Environment Configuration
 
