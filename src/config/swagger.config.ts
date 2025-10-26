@@ -494,6 +494,202 @@ Todas as respostas seguem o padrão:
             },
           },
         },
+        Fornecedor: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            nome: {
+              type: 'string',
+            },
+            cnpj: {
+              type: 'string',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+            },
+            telefone: {
+              type: 'string',
+            },
+            endereco: {
+              type: 'string',
+            },
+            cidade: {
+              type: 'string',
+            },
+            estado: {
+              type: 'string',
+            },
+            ativo: {
+              type: 'boolean',
+            },
+          },
+        },
+        Orcamento: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            ordem_servico_id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            versao: {
+              type: 'integer',
+            },
+            status: {
+              type: 'string',
+              enum: ['rascunho', 'enviado', 'aprovado', 'rejeitado'],
+            },
+            valor_total: {
+              type: 'number',
+              format: 'float',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        Mensagem: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            conversa_id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            conteudo: {
+              type: 'string',
+            },
+            tipo: {
+              type: 'string',
+              enum: ['texto', 'imagem', 'audio', 'video', 'documento'],
+            },
+            remetente: {
+              type: 'string',
+              enum: ['cliente', 'agente', 'sistema'],
+            },
+            lida: {
+              type: 'boolean',
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        Agente: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            nome: {
+              type: 'string',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+            },
+            status: {
+              type: 'string',
+              enum: ['online', 'offline', 'ocupado', 'ausente'],
+            },
+            departamento: {
+              type: 'string',
+            },
+            especialidade: {
+              type: 'string',
+            },
+          },
+        },
+        Etiqueta: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            nome: {
+              type: 'string',
+            },
+            cor: {
+              type: 'string',
+            },
+            categoria: {
+              type: 'string',
+            },
+            descricao: {
+              type: 'string',
+            },
+          },
+        },
+        Template: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            nome: {
+              type: 'string',
+            },
+            conteudo: {
+              type: 'string',
+            },
+            categoria: {
+              type: 'string',
+            },
+            variaveis: {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+            ativo: {
+              type: 'boolean',
+            },
+          },
+        },
+        Pagination: {
+          type: 'object',
+          properties: {
+            page: {
+              type: 'integer',
+              example: 1,
+            },
+            limit: {
+              type: 'integer',
+              example: 10,
+            },
+            total: {
+              type: 'integer',
+              example: 100,
+            },
+            totalPages: {
+              type: 'integer',
+              example: 10,
+            },
+            hasNext: {
+              type: 'boolean',
+              example: true,
+            },
+            hasPrev: {
+              type: 'boolean',
+              example: false,
+            },
+          },
+        },
       },
     },
     paths: {},
