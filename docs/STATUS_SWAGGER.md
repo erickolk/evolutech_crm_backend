@@ -42,7 +42,7 @@
 
 ### Produção (Replit)
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs
+http://localhost:5000/api-docs
 ```
 
 ### Desenvolvimento Local
@@ -52,7 +52,7 @@ http://localhost:5000/api-docs
 
 ### Especificação OpenAPI (JSON)
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json
+http://localhost:5000/api-docs/swagger.json
 ```
 
 ## 📊 Recursos Disponíveis no Swagger UI
@@ -115,7 +115,7 @@ https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/a
 ### 1. Acessar a Documentação
 Abra o navegador e acesse:
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs
+http://localhost:5000/api-docs
 ```
 
 ### 2. Fazer Login (para endpoints protegidos)
@@ -142,7 +142,7 @@ https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/a
 ```
 1. Abrir Postman
 2. Import > URL
-3. Colar: https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json
+3. Colar: http://localhost:5000/api-docs/swagger.json
 4. Import
 ```
 
@@ -151,7 +151,7 @@ https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/a
 npm install @openapitools/openapi-generator-cli -g
 
 openapi-generator-cli generate \
-  -i https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json \
+  -i http://localhost:5000/api-docs/swagger.json \
   -g typescript-axios \
   -o ./sdk
 ```
@@ -200,4 +200,5 @@ A documentação pode ser acessada publicamente e está pronta para uso em desen
 
 **Última Atualização**: Outubro 2024  
 **Status**: ✅ Funcionando e Disponível  
-**URL**: https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs
+**URL**: http://localhost:5000/api-docs
+

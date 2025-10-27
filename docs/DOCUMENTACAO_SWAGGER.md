@@ -6,7 +6,7 @@
 
 **Produção (Replit):**
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs
+http://localhost:5000/api-docs
 ```
 
 **Desenvolvimento Local:**
@@ -19,7 +19,7 @@ http://localhost:5000/api-docs
 Você também pode acessar a especificação OpenAPI completa em formato JSON:
 
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json
+http://localhost:5000/api-docs/swagger.json
 ```
 
 ---
@@ -43,7 +43,7 @@ O Swagger é uma ferramenta de documentação interativa que permite:
 
 Abra o navegador e acesse a URL do Swagger:
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs
+http://localhost:5000/api-docs
 ```
 
 ### 2. Navegar pelos Endpoints
@@ -208,7 +208,7 @@ Você pode copiar qualquer requisição como comando cURL:
 
 Exemplo:
 ```bash
-curl -X GET "https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes?page=1&limit=10" -H "accept: application/json"
+curl -X GET "http://localhost:5000/api/clientes?page=1&limit=10" -H "accept: application/json"
 ```
 
 ### 4. Download da Especificação OpenAPI
@@ -227,7 +227,7 @@ Você pode baixar a especificação completa para usar em outras ferramentas:
 
 1. Abra o Postman
 2. Clique em **"Import"**
-3. Cole a URL: `https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json`
+3. Cole a URL: `http://localhost:5000/api-docs/swagger.json`
 4. Clique em **"Import"**
 5. Todos os endpoints serão importados automaticamente
 
@@ -249,7 +249,7 @@ npm install @openapitools/openapi-generator-cli -g
 
 # Gerar SDK TypeScript
 openapi-generator-cli generate \
-  -i https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api-docs/swagger.json \
+  -i http://localhost:5000/api-docs/swagger.json \
   -g typescript-axios \
   -o ./sdk
 ```
@@ -296,7 +296,7 @@ A documentação vem pré-configurada com dois servidores:
 
 1. **Produção (Replit)**
    ```
-   https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api
+   http://localhost:5000/api
    ```
 
 2. **Desenvolvimento Local**
@@ -415,7 +415,7 @@ O CORS já está habilitado no backend. Se ainda tiver problemas:
 
 **Última Atualização**: Outubro 2024  
 **Versão da API**: 1.0.0  
-**Ambiente**: Replit Production
+**Ambiente**: Local (Dev)
 
 ---
 
@@ -424,3 +424,4 @@ O CORS já está habilitado no backend. Se ainda tiver problemas:
 Para dúvidas ou problemas com a API:
 - 📧 Email: contato@evolutech.com
 - 📚 Consulte também: `GUIA_RAPIDO_INTEGRACAO.md`
+

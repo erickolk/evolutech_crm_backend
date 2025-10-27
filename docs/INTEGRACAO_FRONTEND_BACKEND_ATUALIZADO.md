@@ -4,13 +4,13 @@
 
 ### URL Base do Backend
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev
+http://localhost:5000
 ```
 
 ### Prefixo da API
 Todos os endpoints da API utilizam o prefixo `/api`:
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/{endpoint}
+http://localhost:5000/api/{endpoint}
 ```
 
 ### Headers Obrigatórios
@@ -43,7 +43,7 @@ O backend está configurado com CORS habilitado para todas as origens durante o 
 ### Exemplo de Login
 ```javascript
 // Requisição
-POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/auth/login
+POST http://localhost:5000/api/auth/login
 {
   "email": "usuario@exemplo.com",
   "password": "senha123"
@@ -78,7 +78,7 @@ POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.
 ### Exemplo de Listagem de Clientes
 ```javascript
 // Requisição
-GET https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes?page=1&limit=10&search=João
+GET http://localhost:5000/api/clientes?page=1&limit=10&search=João
 
 // Resposta
 {
@@ -107,7 +107,7 @@ GET https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.d
 ### Exemplo de Criação de Cliente
 ```javascript
 // Requisição
-POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes
+POST http://localhost:5000/api/clientes
 {
   "nome": "Maria Santos",
   "email": "maria@exemplo.com",
@@ -483,7 +483,7 @@ POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.
 ### Configuração do Cliente HTTP
 ```javascript
 // lib/api.ts
-const API_BASE_URL = 'https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 export const api = {
   async get(endpoint, params = {}) {
@@ -668,13 +668,13 @@ try {
 
 ### Verificar se o Backend está Rodando
 ```bash
-curl https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev
+curl http://localhost:5000
 # Deve retornar: "API do CRM está no ar!"
 ```
 
 ### Testar Endpoint Específico
 ```bash
-curl https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes
+curl http://localhost:5000/api/clientes
 ```
 
 ### Verificar Logs do Backend

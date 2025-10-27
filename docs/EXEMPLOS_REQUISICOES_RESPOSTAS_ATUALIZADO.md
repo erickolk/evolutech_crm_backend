@@ -4,7 +4,7 @@
 
 ### URL Base
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api
+http://localhost:5000/api
 ```
 
 ### Headers Padrão

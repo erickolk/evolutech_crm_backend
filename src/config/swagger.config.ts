@@ -28,7 +28,7 @@ A API utiliza JWT (JSON Web Tokens) para autenticação. Para acessar endpoints 
 ## URL Base
 
 \`\`\`
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api
+http://localhost:5000/api
 \`\`\`
 
 ## Formato de Resposta
@@ -65,10 +65,6 @@ Todas as respostas seguem o padrão:
       },
     },
     servers: [
-      {
-        url: 'https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api',
-        description: 'Servidor de Produção (Replit)',
-      },
       {
         url: 'http://localhost:5000/api',
         description: 'Servidor de Desenvolvimento Local',

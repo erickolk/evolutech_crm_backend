@@ -1,15 +1,15 @@
 # 🚀 Guia Rápido de Integração - CRM EvoluTech
 
-## ✅ URL do Backend no Replit
+## ✅ URL do Backend Local
 
 ### URL Pública do Backend
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev
+http://localhost:5000
 ```
 
 ### URL Base da API (com prefixo /api)
 ```
-https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api
+http://localhost:5000/api
 ```
 
 ---
@@ -21,7 +21,7 @@ https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/a
 ```typescript
 // lib/api/config.ts
 export const API_CONFIG = {
-  BASE_URL: 'https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api',
+  BASE_URL: 'http://localhost:5000/api',
   TIMEOUT: 30000, // 30 segundos
   HEADERS: {
     'Content-Type': 'application/json',
@@ -342,13 +342,13 @@ export function ClientesList() {
 
 ```bash
 # Testar se o backend está no ar
-curl https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev
+curl http://localhost:5000
 
 # Testar endpoint de clientes
-curl https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes
+curl http://localhost:5000/api/clientes
 
 # Testar login
-curl -X POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/auth/login \
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@exemplo.com","senha":"senha123"}'
 ```
@@ -357,12 +357,12 @@ curl -X POST https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock
 
 ```javascript
 // Testar conexão básica
-fetch('https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev')
+fetch('http://localhost:5000')
   .then(res => res.text())
   .then(console.log);
 
 // Testar endpoint da API
-fetch('https://7e6cd7de-5657-4362-996a-4d9ba7a26996-00-3n5knz0o3bc8c.spock.replit.dev/api/clientes')
+fetch('http://localhost:5000/api/clientes')
   .then(res => res.json())
   .then(console.log)
   .catch(console.error);
@@ -411,4 +411,5 @@ Para mais detalhes sobre todos os endpoints disponíveis, consulte:
 ---
 
 **Última Atualização**: Outubro 2024
-**Ambiente**: Replit Production
+**Ambiente**: Local (Dev)
+

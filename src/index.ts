@@ -78,7 +78,7 @@ app.get('/api-docs/swagger.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando em http://0.0.0.0:${PORT}`);
-  console.log(`📚 Documentação Swagger disponível em http://0.0.0.0:${PORT}/api-docs`);
+app.listen(PORT, 'localhost', () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`📚 Documentação Swagger disponível em http://localhost:${PORT}/api-docs`);
 });
