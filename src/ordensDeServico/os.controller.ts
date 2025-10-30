@@ -64,7 +64,13 @@ export class OsController {
       if (!id) {
         return res.status(400).json({ message: 'O ID da OS é obrigatório.' });
       }
-      await this.service.softDelete(id);
+      // Captura o usuario_id do usuário autenticado, de um header opcional
+      // ou do body (útil para ambientes de teste sem login)
+      const usuario_id = (req as any).user?.id
+        || (req.headers['x-usuario-id'] as string | undefined)
+        || (req.body?.usuario_id as string | undefined);
+
+      await this.service.softDelete(id, usuario_id);
       res.status(204).send();
     } catch (error: any) {
       res.status(400).json({ message: error.message });
