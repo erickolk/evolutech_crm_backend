@@ -63,33 +63,66 @@ export class OsService {
    * Cria uma nova OS
    */
   async create(osData: CreateOrdemDeServicoRequest, usuario_id: string): Promise<OrdemDeServico> {
-    // Validações de negócio
-    if (!osData.cliente_id || !osData.dispositivo_id) {
-      throw new Error('Cliente e Dispositivo são obrigatórios para criar uma OS.');
+    console.log('🔍 Service - Dados recebidos:', JSON.stringify(osData, null, 2));
+    console.log('👤 Service - Usuario ID:', usuario_id);
+    
+    // Validar campos obrigatórios
+    if (!osData.cliente_id) {
+      throw new Error('Cliente ID é obrigatório');
+    }
+    
+    if (!osData.dispositivo_id) {
+      throw new Error('Dispositivo ID é obrigatório');
     }
 
-    // Valores padrão
-    const osParaCriar: CreateOrdemDeServicoRequest = {
-      ...osData,
-      status_fluxo: osData.status_fluxo || StatusOS.AGUARDANDO_APROVACAO,
-      prioridade: osData.prioridade || Prioridade.NORMAL,
-      tipo_os: osData.tipo_os || TipoOS.MANUTENCAO
-    };
+    try {
+      // Mapear campos do frontend para a estrutura real da tabela
+      const novaOS: Omit<OrdemDeServico, 'id' | 'created_at'> = {
+        cliente_id: osData.cliente_id,
+        dispositivo_id: osData.dispositivo_id,
+        status_fluxo: 'Recebido', // Campo real da tabela
+        relato_cliente: osData.relato_cliente || (osData as any).descricao_problema || '',
+        diagnostico_tecnico: (osData as any).diagnostico || null,
+        valor_orcamento: null,
+        prazo_entrega: osData.data_prevista_entrega || (osData as any).data_prevista || null,
+        garantia_servico: (osData as any).garantia_servico || null,
+        data_ultima_manutencao: null,
+        esta_na_garantia_cliente: null,
+        diagnostico_anterior_cliente: null,
+        tecnico_responsavel_id: (osData as any).tecnico_responsavel || null,
+        prioridade: osData.prioridade || 'Normal',
+        numero_aos: null,
+        acessorios_inclusos: osData.acessorios_inclusos || (osData as any).acessorios || null,
+        deleted_at: null,
+        tipo_os: osData.tipo_os || (osData as any).tipo || null
+      };
 
-    // Criar a OS
-    const novaOS = await this.repository.create(osParaCriar);
+      console.log('📋 Service - Objeto OS preparado:', JSON.stringify(novaOS, null, 2));
 
-    // Registrar no histórico de status
-    await this.statusHistoricoRepository.create({
-      os_id: novaOS.id,
-      status_anterior: null,
-      status_novo: novaOS.status_fluxo,
-      usuario_id,
-      motivo: 'OS criada',
-      observacoes: 'Ordem de serviço criada no sistema'
-    });
+      // Criar a OS no banco
+      const osCreated = await this.repository.create(novaOS);
+      console.log('✅ Service - OS criada no banco:', osCreated.id);
 
-    return novaOS;
+      // Criar histórico de status (se o serviço existir)
+      try {
+        await this.statusHistoricoRepository.create({
+          os_id: osCreated.id,
+          status_anterior: null,
+          status_novo: 'Recebido',
+          usuario_id,
+          motivo: 'OS criada',
+          observacoes: 'Ordem de serviço criada no sistema'
+        });
+        console.log('📝 Service - Histórico de status criado');
+      } catch (historyError) {
+        console.warn('⚠️ Service - Erro ao criar histórico (não crítico):', historyError);
+      }
+
+      return osCreated;
+    } catch (error: any) {
+      console.error('❌ Service - Erro detalhado:', error);
+      throw new Error('Não foi possível criar a Ordem de Serviço.');
+    }
   }
 
   /**

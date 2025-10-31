@@ -130,6 +130,9 @@ router.get('/orcamentos/:id/itens/:itemId/can-edit', (req, res) => orcamentoItem
 router.get('/orcamentos/:id/calculations', (req, res) => orcamentoItemController.getOrcamentoCalculations(req, res));
 
 // --- Rotas de Estoque ---
+// Consulta geral de estoque
+router.get('/estoque', (req, res) => estoqueController.listarEstoque(req, res));
+
 // Movimentações de estoque
 router.post('/estoque/movimentacao', (req, res) => estoqueController.criarMovimentacao(req, res));
 router.get('/estoque/movimentacoes', (req, res) => estoqueController.listarMovimentacoes(req, res));

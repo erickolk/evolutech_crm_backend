@@ -27,6 +27,71 @@ export class EstoqueService {
     this.produtoRepository = new ProdutoRepository();
   }
 
+  // ===== OPERAÇÕES DE CONSULTA DE ESTOQUE =====
+
+  async listarEstoque(filtros: any = {}): Promise<any> {
+    try {
+      // Buscar todos os produtos com suas quantidades atuais
+      const produtos = await this.produtoRepository.findAll();
+      
+      // Aplicar filtros se necessário
+      let produtosFiltrados = produtos;
+      
+      if (filtros.estoque_baixo === 'true') {
+        produtosFiltrados = produtos.filter(produto => 
+          (produto.quantidade_atual || 0) <= (produto.quantidade_minima || 0)
+        );
+      }
+      
+      if (filtros.sem_estoque === 'true') {
+        produtosFiltrados = produtos.filter(produto => 
+          (produto.quantidade_atual || 0) === 0
+        );
+      }
+
+      // Formatar resposta
+      const estoque = produtosFiltrados.map(produto => ({
+        produto_id: produto.id,
+        descricao: produto.descricao,
+        codigo_interno: produto.codigo_interno,
+        quantidade_atual: produto.quantidade_atual || 0,
+        quantidade_minima: produto.quantidade_minima || 0,
+        quantidade_maxima: produto.quantidade_maxima || 0,
+        localizacao_estoque: produto.localizacao_estoque,
+        preco_custo: produto.preco_custo,
+        preco_venda: produto.preco_venda,
+        status_estoque: this.getStatusEstoque(produto),
+        ativo: produto.ativo
+      }));
+
+      return {
+        estoque,
+        resumo: {
+          total_produtos: estoque.length,
+          produtos_estoque_baixo: estoque.filter(p => p.status_estoque === 'BAIXO').length,
+          produtos_sem_estoque: estoque.filter(p => p.status_estoque === 'SEM_ESTOQUE').length,
+          produtos_ok: estoque.filter(p => p.status_estoque === 'OK').length
+        }
+      };
+    } catch (error: any) {
+      console.error('Erro ao listar estoque:', error);
+      throw new Error(`Erro ao listar estoque: ${error.message}`);
+    }
+  }
+
+  private getStatusEstoque(produto: Produto): string {
+    const quantidadeAtual = produto.quantidade_atual || 0;
+    const quantidadeMinima = produto.quantidade_minima || 0;
+
+    if (quantidadeAtual === 0) {
+      return 'SEM_ESTOQUE';
+    } else if (quantidadeAtual <= quantidadeMinima) {
+      return 'BAIXO';
+    } else {
+      return 'OK';
+    }
+  }
+
   // ===== OPERAÇÕES BÁSICAS DE MOVIMENTAÇÃO =====
 
   async criarMovimentacao(request: CreateMovimentacaoRequest): Promise<MovimentacaoResponse> {

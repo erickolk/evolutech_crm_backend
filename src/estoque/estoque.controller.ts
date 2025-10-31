@@ -4,6 +4,18 @@ import { EstoqueService } from './estoque.service.js';
 export class EstoqueController {
   private service = new EstoqueService();
 
+  // ===== ESTOQUE GERAL =====
+
+  async listarEstoque(req: Request, res: Response) {
+    try {
+      const filtros = req.query;
+      const estoque = await this.service.listarEstoque(filtros);
+      res.status(200).json(estoque);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+
   // ===== MOVIMENTAÇÕES BÁSICAS =====
 
   async criarMovimentacao(req: Request, res: Response) {

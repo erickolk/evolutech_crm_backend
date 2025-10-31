@@ -39,9 +39,19 @@ export class OsController {
 
   async create(req: Request, res: Response) {
     try {
-      const novaOs = await this.service.create(req.body);
+      console.log('🔍 Controller - Dados recebidos:', JSON.stringify(req.body, null, 2));
+      
+      // Extrair usuario_id do token JWT ou usar um valor padrão
+      const usuario_id = (req as any).user?.id || 'sistema';
+      console.log('👤 Controller - Usuario ID:', usuario_id);
+      
+      const novaOs = await this.service.create(req.body, usuario_id);
+      console.log('✅ Controller - OS criada:', novaOs.id);
+      
       res.status(201).json(novaOs);
     } catch (error: any) {
+      console.error('❌ Controller - Erro ao criar OS:', error.message);
+      console.error('📋 Controller - Stack trace:', error.stack);
       res.status(400).json({ message: error.message });
     }
   }

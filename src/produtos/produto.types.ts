@@ -4,6 +4,7 @@ export interface Produto {
 
   descricao: string;
   codigo_interno?: string | null;
+  categoria?: string | null; // Campo opcional até ser adicionado no banco
 
   preco_custo: number;
   preco_venda: number;

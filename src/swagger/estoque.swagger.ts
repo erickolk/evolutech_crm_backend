@@ -1,5 +1,69 @@
 /**
  * @swagger
+ * /estoque:
+ *   get:
+ *     summary: Listar estoque geral
+ *     tags: [Estoque]
+ *     parameters:
+ *       - in: query
+ *         name: estoque_baixo
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         description: Filtrar apenas produtos com estoque baixo
+ *       - in: query
+ *         name: sem_estoque
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         description: Filtrar apenas produtos sem estoque
+ *     responses:
+ *       200:
+ *         description: Lista de produtos com informações de estoque
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 estoque:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       nome:
+ *                         type: string
+ *                       descricao:
+ *                         type: string
+ *                       quantidade_atual:
+ *                         type: number
+ *                       estoque_minimo:
+ *                         type: number
+ *                       localizacao_estoque:
+ *                         type: string
+ *                       preco_venda:
+ *                         type: number
+ *                       status_estoque:
+ *                         type: string
+ *                         enum: [OK, BAIXO, SEM_ESTOQUE]
+ *                 resumo:
+ *                   type: object
+ *                   properties:
+ *                     total_produtos:
+ *                       type: number
+ *                     produtos_estoque_baixo:
+ *                       type: number
+ *                     produtos_sem_estoque:
+ *                       type: number
+ *                     produtos_ok:
+ *                       type: number
+ *       500:
+ *         description: Erro interno do servidor
+ */
+
+/**
+ * @swagger
  * /estoque/movimentacao:
  *   post:
  *     summary: Criar movimentação de estoque
